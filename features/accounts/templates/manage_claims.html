@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Kelola Klaim - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Kelola Klaim Miles</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        {% if claims %}
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Member</th>
+                    <th class="text-left py-2">Jenis</th>
+                    <th class="text-left py-2">Miles</th>
+                    <th class="text-left py-2">Status</th>
+                    <th class="text-left py-2">Tanggal</th>
+                    <th class="text-left py-2">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in claims %}
+                <tr class="border-b">
+                    <td class="py-2">{{ claim.user.email }}</td>
+                    <td class="py-2">{{ claim.get_claim_type_display }}</td>
+                    <td class="py-2">{{ claim.miles }}</td>
+                    <td class="py-2">
+                        <span class="px-2 py-1 rounded text-sm {% if claim.status == 'approved' %}bg-green-100 text-green-700{% elif claim.status == 'rejected' %}bg-red-100 text-red-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                            {{ claim.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="py-2">{{ claim.created_at|date:"d/m/Y" }}</td>
+                    <td class="py-2">
+                        {% if claim.status == 'pending' %}
+                        <form method="post" action="{% url 'manage_claims' %}" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="claim_id" value="{{ claim.id }}">
+                            <input type="hidden" name="action" value="approve">
+                            <button type="submit" class="text-green-600 hover:underline mr-2">Setuju</button>
+                        </form>
+                        <form method="post" action="{% url 'manage_claims' %}" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="claim_id" value="{{ claim.id }}">
+                            <input type="hidden" name="action" value="reject">
+                            <button type="submit" class="text-red-600 hover:underline">Tolak</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-gray-500">Belum ada klaim</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

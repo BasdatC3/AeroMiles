@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Kelola Hadiah - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Kelola Hadiah</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Tambah Hadiah Baru</h2>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Hadiah</label>
+                <input type="text" name="name" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Deskripsi</label>
+                <textarea name="description" class="w-full p-2 border rounded" rows="3"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Miles Cost</label>
+                <input type="number" name="miles_cost" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Stock</label>
+                <input type="number" name="stock" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Provider</label>
+                <input type="text" name="provider" class="w-full p-2 border rounded">
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Tambah Hadiah</button>
+        </form>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Daftar Hadiah</h2>
+        {% if rewards %}
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Nama</th>
+                    <th class="text-left py-2">Miles Cost</th>
+                    <th class="text-left py-2">Stock</th>
+                    <th class="text-left py-2">Provider</th>
+                    <th class="text-left py-2">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rewards %}
+                <tr class="border-b">
+                    <td class="py-2">{{ r.name }}</td>
+                    <td class="py-2">{{ r.miles_cost }}</td>
+                    <td class="py-2">{{ r.stock }}</td>
+                    <td class="py-2">{{ r.provider }}</td>
+                    <td class="py-2">{{ r.is_active|yesno:"Aktif,Tidak Aktif" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-gray-500">Belum ada hadiah</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

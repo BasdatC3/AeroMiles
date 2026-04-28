@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Transfer Miles - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Transfer Miles</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Transfer Miles ke Member Lain</h2>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Email Penerima</label>
+                <input type="email" name="recipient_email" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Jumlah Miles</label>
+                <input type="number" name="miles" class="w-full p-2 border rounded" required>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Transfer</button>
+        </form>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Riwayat Transfer</h2>
+        {% if transfers %}
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Pengirim</th>
+                    <th class="text-left py-2">Penerima</th>
+                    <th class="text-left py-2">Miles</th>
+                    <th class="text-left py-2">Status</th>
+                    <th class="text-left py-2">Tanggal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transfers %}
+                <tr class="border-b">
+                    <td class="py-2">{{ t.sender.email }}</td>
+                    <td class="py-2">{{ t.recipient.email }}</td>
+                    <td class="py-2">{{ t.miles }}</td>
+                    <td class="py-2">{{ t.get_status_display }}</td>
+                    <td class="py-2">{{ t.created_at|date:"d/m/Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-gray-500">Belum ada transfer</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

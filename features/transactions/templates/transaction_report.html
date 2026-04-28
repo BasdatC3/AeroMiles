@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Laporan Transaksi - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Laporan Transaksi</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        {% if transactions %}
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Member</th>
+                    <th class="text-left py-2">Jenis</th>
+                    <th class="text-left py-2">Miles</th>
+                    <th class="text-left py-2">Deskripsi</th>
+                    <th class="text-left py-2">Tanggal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr class="border-b">
+                    <td class="py-2">{{ t.user.email }}</td>
+                    <td class="py-2">{{ t.get_type_display }}</td>
+                    <td class="py-2">{{ t.miles }}</td>
+                    <td class="py-2">{{ t.description|default:"-" }}</td>
+                    <td class="py-2">{{ t.created_at|date:"d/m/Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-gray-500">Belum ada transaksi</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

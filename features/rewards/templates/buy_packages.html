@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Beli Package - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Beli Package Miles</h1>
+
+    <div class="grid md:grid-cols-3 gap-6">
+        {% for pkg in packages %}
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold">{{ pkg.name }}</h2>
+            <p class="text-gray-600 mt-2">{{ pkg.description }}</p>
+            <p class="text-3xl font-bold mt-4">${{ pkg.price }}</p>
+            <p class="text-blue-600 font-bold">+{{ pkg.miles_bonus }} miles</p>
+            <button class="bg-blue-600 text-white px-6 py-2 rounded w-full mt-4 hover:bg-blue-700">Beli</button>
+        </div>
+        {% empty %}
+        <p class="text-gray-500">Belum ada package</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

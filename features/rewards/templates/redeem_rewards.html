@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Redeem Rewards - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Redeem Hadiah</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Hadiah Tersedia</h2>
+        {% if rewards %}
+        <div class="grid md:grid-cols-3 gap-4">
+            {% for reward in rewards %}
+            <div class="border p-4 rounded-lg">
+                <h3 class="font-bold">{{ reward.name }}</h3>
+                <p class="text-gray-600 text-sm">{{ reward.description }}</p>
+                <p class="text-blue-600 font-bold mt-2">{{ reward.miles_cost }} miles</p>
+                <button class="bg-green-600 text-white px-4 py-2 rounded mt-2 w-full hover:bg-green-700">Redeem</button>
+            </div>
+            {% empty %}
+            <p class="text-gray-500">Belum ada hadiah</p>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500">Belum ada hadiah</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Info Tier - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Informasi Tier</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Tier Saat Ini: {{ user.tier|upper }}</h2>
+
+        <div class="grid md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-gray-600">Total Miles</p>
+                <p class="text-3xl font-bold">{{ user.total_miles }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Award Miles</p>
+                <p class="text-3xl font-bold">{{ user.award_miles }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Tier Levels</h2>
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Tier</th>
+                    <th class="text-left py-2">Miles Required</th>
+                    <th class="text-left py-2">Benefits</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="border-b">
+                    <td class="py-2 font-bold">Basic</td>
+                    <td class="py-2">0</td>
+                    <td class="py-2">Base earning rate</td>
+                </tr>
+                <tr class="border-b">
+                    <td class="py-2 font-bold">Silver</td>
+                    <td class="py-2">25,000</td>
+                    <td class="py-2">25% bonus miles</td>
+                </tr>
+                <tr class="border-b">
+                    <td class="py-2 font-bold">Gold</td>
+                    <td class="py-2">50,000</td>
+                    <td class="py-2">50% bonus miles, priority boarding</td>
+                </tr>
+                <tr>
+                    <td class="py-2 font-bold">Platinum</td>
+                    <td class="py-2">100,000</td>
+                    <td class="py-2">75% bonus miles, lounge access</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

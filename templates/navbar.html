@@ -1,0 +1,70 @@
+{% load static %}
+<nav class="bg-blue-600 text-white shadow-lg">
+    <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between py-4">
+            <a href="{% url 'landing' %}" class="text-2xl font-bold">AeroMiles</a>
+
+            {% if user.is_authenticated %}
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="{% url 'dashboard' %}" class="hover:text-blue-200">Dashboard</a>
+
+                {% if user.role == 'member' %}
+                    <a href="{% url 'claim_miles' %}" class="hover:text-blue-200">Claim Miles</a>
+                    <a href="{% url 'transfer_miles' %}" class="hover:text-blue-200">Transfer Miles</a>
+                    <a href="{% url 'redeem_rewards' %}" class="hover:text-blue-200">Redeem Hadiah</a>
+                    <a href="{% url 'buy_packages' %}" class="hover:text-blue-200">Beli Package</a>
+                    <a href="{% url 'tier_info' %}" class="hover:text-blue-200">Info Tier</a>
+                {% elif user.role == 'staf' %}
+                    <a href="{% url 'manage_members' %}" class="hover:text-blue-200">Kelola Member</a>
+                    <a href="{% url 'manage_claims' %}" class="hover:text-blue-200">Kelola Klaim</a>
+                    <a href="{% url 'manage_rewards' %}" class="hover:text-blue-200">Kelola Hadiah</a>
+                    <a href="{% url 'manage_partners' %}" class="hover:text-blue-200">Kelola Mitra</a>
+                    <a href="{% url 'transaction_report' %}" class="hover:text-blue-200">Laporan</a>
+                {% endif %}
+
+                <a href="{% url 'profile' %}" class="hover:text-blue-200">Pengaturan Profil</a>
+                <a href="{% url 'logout' %}" class="bg-red-500 px-4 py-2 rounded hover:bg-red-600">Logout</a>
+            </div>
+
+            <!-- Mobile menu button -->
+            <button class="md:hidden" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            {% else %}
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="{% url 'login' %}" class="hover:text-blue-200">Login</a>
+                <a href="{% url 'register' %}" class="bg-white text-blue-600 px-4 py-2 rounded hover:bg-blue-100">Registrasi</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Mobile Menu -->
+        {% if user.is_authenticated %}
+        <div id="mobile-menu" class="hidden md:hidden pb-4">
+            <a href="{% url 'dashboard' %}" class="block py-2 hover:text-blue-200">Dashboard</a>
+            {% if user.role == 'member' %}
+                <a href="{% url 'claim_miles' %}" class="block py-2 hover:text-blue-200">Claim Miles</a>
+                <a href="{% url 'transfer_miles' %}" class="block py-2 hover:text-blue-200">Transfer Miles</a>
+                <a href="{% url 'redeem_rewards' %}" class="block py-2 hover:text-blue-200">Redeem Hadiah</a>
+                <a href="{% url 'buy_packages' %}" class="block py-2 hover:text-blue-200">Beli Package</a>
+                <a href="{% url 'tier_info' %}" class="block py-2 hover:text-blue-200">Info Tier</a>
+            {% elif user.role == 'staf' %}
+                <a href="{% url 'manage_members' %}" class="block py-2 hover:text-blue-200">Kelola Member</a>
+                <a href="{% url 'manage_claims' %}" class="block py-2 hover:text-blue-200">Kelola Klaim</a>
+                <a href="{% url 'manage_rewards' %}" class="block py-2 hover:text-blue-200">Kelola Hadiah</a>
+                <a href="{% url 'manage_partners' %}" class="block py-2 hover:text-blue-200">Kelola Mitra</a>
+                <a href="{% url 'transaction_report' %}" class="block py-2 hover:text-blue-200">Laporan</a>
+            {% endif %}
+            <a href="{% url 'profile' %}" class="block py-2 hover:text-blue-200">Pengaturan Profil</a>
+            <a href="{% url 'logout' %}" class="block py-2 text-red-300 hover:text-red-200">Logout</a>
+        </div>
+        {% else %}
+        <div id="mobile-menu" class="hidden md:hidden pb-4">
+            <a href="{% url 'login' %}" class="block py-2 hover:text-blue-200">Login</a>
+            <a href="{% url 'register' %}" class="block py-2 hover:text-blue-200">Registrasi</a>
+        </div>
+        {% endif %}
+    </div>
+</nav>

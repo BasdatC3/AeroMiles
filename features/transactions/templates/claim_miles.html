@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Claim Miles - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Claim Miles</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Ajukan Klaim Miles</h2>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Jenis Klaim</label>
+                <select name="claim_type" class="w-full p-2 border rounded">
+                    <option value="missing">Missing Miles</option>
+                    <option value="bonus">Bonus Miles</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Jumlah Miles</label>
+                <input type="number" name="miles" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Flight Number</label>
+                <input type="text" name="flight_number" class="w-full p-2 border rounded" placeholder="e.g. GA123">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Deskripsi</label>
+                <textarea name="description" class="w-full p-2 border rounded" rows="3"></textarea>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Ajukan Klaim</button>
+        </form>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Riwayat Klaim</h2>
+        {% if claims %}
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Jenis</th>
+                    <th class="text-left py-2">Miles</th>
+                    <th class="text-left py-2">Status</th>
+                    <th class="text-left py-2">Tanggal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in claims %}
+                <tr class="border-b">
+                    <td class="py-2">{{ claim.get_claim_type_display }}</td>
+                    <td class="py-2">{{ claim.miles }}</td>
+                    <td class="py-2">
+                        <span class="px-2 py-1 rounded text-sm {% if claim.status == 'approved' %}bg-green-100 text-green-700{% elif claim.status == 'rejected' %}bg-red-100 text-red-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                            {{ claim.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="py-2">{{ claim.created_at|date:"d/m/Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-gray-500">Belum ada klaim</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
