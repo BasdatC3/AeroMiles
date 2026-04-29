@@ -25,45 +25,51 @@
                 <input type="password" name="password1" class="w-full p-2 border rounded" required>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Confirm Password *</label>
+                <label class="block text-sm font-medium mb-1">Konfirmasi Password *</label>
                 <input type="password" name="password2" class="w-full p-2 border rounded" required>
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Salutation</label>
-                <input type="text" name="salutation" class="w-full p-2 border rounded" placeholder="Mr/Mrs/Ms">
+                <select name="salutation" class="w-full p-2 border rounded">
+                    <option value="">Pilih...</option>
+                    <option value="Mr.">Mr.</option>
+                    <option value="Mrs.">Mrs.</option>
+                    <option value="Ms.">Ms.</option>
+                    <option value="Dr.">Dr.</option>
+                </select>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">First/Middle Name</label>
+                <label class="block text-sm font-medium mb-1">Nama Depan/Tengah</label>
                 <input type="text" name="first_mid_name" class="w-full p-2 border rounded">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Last Name *</label>
+                <label class="block text-sm font-medium mb-1">Nama Belakang *</label>
                 <input type="text" name="last_name" class="w-full p-2 border rounded" required>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Country Code</label>
+                <label class="block text-sm font-medium mb-1">Kode Negara</label>
                 <input type="text" name="country_code" class="w-full p-2 border rounded" placeholder="+62">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Phone Number</label>
-                <input type="text" name="phone" class="w-full p-2 border rounded">
+                <label class="block text-sm font-medium mb-1">Nomor HP</label>
+                <input type="text" name="mobile_number" class="w-full p-2 border rounded">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Nationality</label>
-                <input type="text" name="nationality" class="w-full p-2 border rounded">
+                <label class="block text-sm font-medium mb-1">Kewarganegaraan</label>
+                <input type="text" name="kewarganegaraan" class="w-full p-2 border rounded">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Birth Date</label>
-                <input type="date" name="birth_date" class="w-full p-2 border rounded">
+                <label class="block text-sm font-medium mb-1">Tanggal Lahir</label>
+                <input type="date" name="tanggal_lahir" class="w-full p-2 border rounded">
             </div>
 
             {% if role == 'staf' and airlines %}
             <div>
-                <label class="block text-sm font-medium mb-1">Airline *</label>
+                <label class="block text-sm font-medium mb-1">Kode Maskapai *</label>
                 <select name="airline" class="w-full p-2 border rounded" required>
-                    <option value="">Select Airline</option>
+                    <option value="">Pilih Maskapai</option>
                     {% for airline in airlines %}
-                    <option value="{{ airline.id }}">{{ airline.code }} - {{ airline.name }}</option>
+                    <option value="{{ airline.kode_maskapai }}">{{ airline.kode_maskapai }} - {{ airline.nama_maskapai }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -73,7 +79,7 @@
         </form>
 
         <p class="text-center mt-6 text-gray-600">
-            Already have an account? <a href="{% url 'login' %}" class="text-blue-600 hover:underline">Login</a>
+            Sudah punya akun? <a href="{% url 'login' %}" class="text-blue-600 hover:underline">Login</a>
         </p>
     </div>
 </div>

@@ -1,1 +1,2 @@
-# AeroMiles Django Project
+# AeroMiles Django Project - empty file for now
+# Schema will be set via settings

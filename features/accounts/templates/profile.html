@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Profile - AeroMiles{% endblock %}
+{% block title %}Pengaturan Profil - AeroMiles{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
@@ -12,48 +12,42 @@
             {% csrf_token %}
             <div>
                 <label class="block text-sm font-medium mb-1">Email</label>
-                <input type="email" value="{{ user.email }}" class="w-full p-2 border rounded bg-gray-100" disabled>
+                <input type="email" value="{{ user_email }}" class="w-full p-2 border rounded bg-gray-100" disabled>
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Salutation</label>
-                <input type="text" name="salutation" value="{{ user.salutation|default:'' }}" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">First/Middle Name</label>
-                <input type="text" name="first_mid_name" value="{{ user.first_mid_name|default:'' }}" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Last Name *</label>
-                <input type="text" name="last_name" value="{{ user.last_name|default:'' }}" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Country Code</label>
-                <input type="text" name="country_code" value="{{ user.country_code|default:'' }}" class="w-full p-2 border rounded" placeholder="+62">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Phone Number</label>
-                <input type="text" name="phone" value="{{ user.phone|default:'' }}" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Nationality</label>
-                <input type="text" name="nationality" value="{{ user.nationality|default:'' }}" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Birth Date</label>
-                <input type="date" name="birth_date" value="{{ user.birth_date|default:'' }}" class="w-full p-2 border rounded">
-            </div>
-
-            {% if user.role == 'staf' and airlines %}
-            <div>
-                <label class="block text-sm font-medium mb-1">Airline</label>
-                <select name="airline" class="w-full p-2 border rounded">
-                    <option value="">Select Airline</option>
-                    {% for airline in airlines %}
-                    <option value="{{ airline.id }}" {% if user.airline_id == airline.id %}selected{% endif %}>{{ airline.code }} - {{ airline.name }}</option>
-                    {% endfor %}
+                <select name="salutation" class="w-full p-2 border rounded">
+                    <option value="">Pilih...</option>
+                    <option value="Mr." {% if pengguna.salutation == 'Mr.' %}selected{% endif %}>Mr.</option>
+                    <option value="Mrs." {% if pengguna.salutation == 'Mrs.' %}selected{% endif %}>Mrs.</option>
+                    <option value="Ms." {% if pengguna.salutation == 'Ms.' %}selected{% endif %}>Ms.</option>
+                    <option value="Dr." {% if pengguna.salutation == 'Dr.' %}selected{% endif %}>Dr.</option>
                 </select>
             </div>
-            {% endif %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Depan/Tengah</label>
+                <input type="text" name="first_mid_name" value="{{ pengguna.first_mid_name|default:'' }}" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Belakang *</label>
+                <input type="text" name="last_name" value="{{ pengguna.last_name }}" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Kode Negara</label>
+                <input type="text" name="country_code" value="{{ pengguna.country_code|default:'' }}" class="w-full p-2 border rounded" placeholder="+62">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor HP</label>
+                <input type="text" name="mobile_number" value="{{ pengguna.mobile_number|default:'' }}" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Kewarganegaraan</label>
+                <input type="text" name="kewarganegaraan" value="{{ pengguna.kewarganegaraan|default:'' }}" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Lahir</label>
+                <input type="date" name="tanggal_lahir" value="{{ pengguna.tanggal_lahir|default:'' }}" class="w-full p-2 border rounded">
+            </div>
 
             <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Simpan Perubahan</button>
         </form>
@@ -69,21 +63,16 @@
         <div class="space-y-2">
             <div class="flex justify-between py-2 border-b">
                 <span class="text-gray-600">Role</span>
-                <span class="font-medium uppercase">{{ user.role }}</span>
+                <span class="font-medium uppercase">{{ role }}</span>
             </div>
-            {% if user.role == 'member' %}
+            {% if role == 'member' and member %}
             <div class="flex justify-between py-2 border-b">
                 <span class="text-gray-600">Nomor Member</span>
-                <span class="font-medium">{{ user.member_number|default:"-" }}</span>
+                <span class="font-medium">{{ member.nomor_member }}</span>
             </div>
             <div class="flex justify-between py-2 border-b">
                 <span class="text-gray-600">Tanggal Bergabung</span>
-                <span class="font-medium">{{ user.join_date }}</span>
-            </div>
-            {% elif user.role == 'staf' %}
-            <div class="flex justify-between py-2 border-b">
-                <span class="text-gray-600">ID Staf</span>
-                <span class="font-medium">{{ user.staff_id|default:"-" }}</span>
+                <span class="font-medium">{{ member.tanggal_bergabung }}</span>
             </div>
             {% endif %}
         </div>

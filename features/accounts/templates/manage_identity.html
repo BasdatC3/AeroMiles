@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Identitas Saya - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-3xl font-bold">Identitas Saya</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <button type="button" onclick="openModal('createModal')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tambah Identitas</button>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Nomor Dokumen</th>
+                    <th class="text-left py-2">Jenis</th>
+                    <th class="text-left py-2">Negara Penerbit</th>
+                    <th class="text-left py-2">Tanggal Terbit</th>
+                    <th class="text-left py-2">Tanggal Habis</th>
+                    <th class="text-left py-2">Status</th>
+                    <th class="text-left py-2">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for identity in identities %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-2">{{ identity.doc_number }}</td>
+                    <td class="py-2 uppercase">{{ identity.doc_type }}</td>
+                    <td class="py-2">{{ identity.issuing_country }}</td>
+                    <td class="py-2">{{ identity.issue_date }}</td>
+                    <td class="py-2">{{ identity.expiry_date }}</td>
+                    <td class="py-2">
+                        {% if identity.is_expired %}
+                        <span class="px-2 py-1 rounded text-sm bg-red-100 text-red-700">Kedaluwarsa</span>
+                        {% else %}
+                        <span class="px-2 py-1 rounded text-sm bg-green-100 text-green-700">Aktif</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-2">
+                        <button onclick="openEditModal({{ identity.id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
+                        <button onclick="confirmDelete({{ identity.id }})" class="text-red-600 hover:underline">Hapus</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="py-4 text-center text-gray-500">Belum ada identitas</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">Tambah Identitas</h2>
+        <form id="createForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor Dokumen *</label>
+                <input type="text" name="doc_number" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Jenis *</label>
+                <select name="doc_type" class="w-full p-2 border rounded" required>
+                    <option value="">Pilih Jenis</option>
+                    <option value="ktp">KTP</option>
+                    <option value="passport">Paspor</option>
+                    <option value="sim">SIM</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Negara Penerbit</label>
+                <input type="text" name="issuing_country" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Terbit</label>
+                <input type="date" name="issue_date" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Habis</label>
+                <input type="date" name="expiry_date" class="w-full p-2 border rounded">
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('createModal')" class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">Edit Identitas</h2>
+        <form id="editForm" class="space-y-4">
+            <input type="hidden" name="identity_id" id="editIdentityId">
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor Dokumen</label>
+                <input type="text" id="editDocNumber" class="w-full p-2 border rounded bg-gray-100" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Jenis *</label>
+                <select name="doc_type" id="editDocType" class="w-full p-2 border rounded" required>
+                    <option value="ktp">KTP</option>
+                    <option value="passport">Paspor</option>
+                    <option value="sim">SIM</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Negara Penerbit</label>
+                <input type="text" name="issuing_country" id="editIssuingCountry" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Terbit</label>
+                <input type="date" name="issue_date" id="editIssueDate" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Habis</label>
+                <input type="date" name="expiry_date" id="editExpiryDate" class="w-full p-2 border rounded">
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('editModal')" class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+        <h2 class="text-xl font-bold mb-4">Konfirmasi Hapus</h2>
+        <p class="mb-4">Yakin ingin hapus identitas ini?</p>
+        <form id="deleteForm" method="post">
+            {% csrf_token %}
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('deleteModal')" class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit" class="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+function confirmDelete(id) {
+    document.getElementById('deleteForm').action = `/identity/${id}/delete/`;
+    openModal('deleteModal');
+}
+
+function openEditModal(id) {
+    fetch(`/identity/${id}/edit/`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.identity) {
+                document.getElementById('editIdentityId').value = id;
+                document.getElementById('editDocNumber').value = data.identity.doc_number || '';
+                document.getElementById('editDocType').value = data.identity.doc_type || 'ktp';
+                document.getElementById('editIssuingCountry').value = data.identity.issuing_country || '';
+                document.getElementById('editIssueDate').value = data.identity.issue_date || '';
+                document.getElementById('editExpiryDate').value = data.identity.expiry_date || '';
+                document.getElementById('editForm').action = `/identity/${id}/edit/`;
+                openModal('editModal');
+            }
+        });
+}
+
+document.getElementById('createForm').onsubmit = async function(e) {
+    e.preventDefault();
+    let formData = new FormData(this);
+    let response = await fetch('/identity/create/', { method: 'POST', body: formData });
+    let result = await response.json();
+    if (result.success) {
+        alert(result.message);
+        closeModal('createModal');
+        location.reload();
+    } else {
+        alert(result.error);
+    }
+};
+
+document.getElementById('editForm').onsubmit = async function(e) {
+    e.preventDefault();
+    let formData = new FormData(this);
+    let id = document.getElementById('editIdentityId').value;
+    let response = await fetch(`/identity/${id}/edit/`, { method: 'POST', body: formData });
+    let result = await response.json();
+    if (result.success) {
+        alert(result.message);
+        closeModal('editModal');
+        location.reload();
+    } else {
+        alert(result.error);
+    }
+};
+</script>
+{% endblock %}

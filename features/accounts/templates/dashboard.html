@@ -12,108 +12,73 @@
         <div class="grid md:grid-cols-2 gap-4">
             <div>
                 <p class="text-gray-600">Nama Lengkap</p>
-                <p class="font-medium">{{ user.get_full_name }}</p>
+                <p class="font-medium">
+                    {% if pengguna.salutation %}{{ pengguna.salutation }} {% endif %}
+                    {% if pengguna.first_mid_name %}{{ pengguna.first_mid_name }} {% endif %}
+                    {{ pengguna.last_name }}
+                </p>
             </div>
             <div>
                 <p class="text-gray-600">Email</p>
-                <p class="font-medium">{{ user.email }}</p>
+                <p class="font-medium">{{ user_email }}</p>
             </div>
             <div>
-                <p class="text-gray-600">Phone</p>
-                <p class="font-medium">{{ user.country_code }} {{ user.phone|default:"-" }}</p>
+                <p class="text-gray-600">No. HP</p>
+                <p class="font-medium">
+                    {% if pengguna.country_code %}{{ pengguna.country_code }}{% endif %} {{ pengguna.mobile_number|default:"-" }}
+                </p>
             </div>
             <div>
                 <p class="text-gray-600">Kewarganegaraan</p>
-                <p class="font-medium">{{ user.nationality|default:"-" }}</p>
+                <p class="font-medium">{{ pengguna.kewarganegaraan|default:"-" }}</p>
             </div>
             <div>
                 <p class="text-gray-600">Tanggal Lahir</p>
-                <p class="font-medium">{{ user.birth_date|default:"-" }}</p>
+                <p class="font-medium">{{ pengguna.tanggal_lahir|default:"-" }}</p>
             </div>
         </div>
     </div>
 
-    {% if user.role == 'member' %}
+    {% if role == 'member' and member %}
     <!-- Member-specific Info -->
     <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-xl font-bold mb-4">Informasi Member</h2>
-        <div class="grid md:grid-cols-3 gap-4">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
                 <p class="text-gray-600">Nomor Member</p>
-                <p class="font-medium text-lg">{{ user.member_number|default:"-" }}</p>
+                <p class="font-medium text-lg">{{ member.nomor_member }}</p>
             </div>
             <div>
                 <p class="text-gray-600">Tier Saat Ini</p>
-                <p class="font-medium text-lg uppercase">{{ user.tier }}</p>
+                <p class="font-medium text-lg uppercase">{{ member.id_tier }}</p>
             </div>
             <div>
                 <p class="text-gray-600">Total Miles</p>
-                <p class="font-medium text-lg">{{ user.total_miles }}</p>
+                <p class="font-medium text-lg">{{ member.total_miles|default:0 }}</p>
             </div>
             <div>
                 <p class="text-gray-600">Award Miles</p>
-                <p class="font-medium text-lg">{{ user.award_miles }}</p>
+                <p class="font-medium text-lg">{{ member.award_miles|default:0 }}</p>
             </div>
             <div>
                 <p class="text-gray-600">Tanggal Bergabung</p>
-                <p class="font-medium">{{ user.join_date }}</p>
+                <p class="font-medium">{{ member.tanggal_bergabung }}</p>
             </div>
         </div>
     </div>
 
-    <!-- Recent Transactions -->
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Riwayat Transaksi Terbaru</h2>
-        {% if recent_transactions %}
-        <table class="w-full">
-            <thead>
-                <tr class="border-b">
-                    <th class="text-left py-2">Jenis</th>
-                    <th class="text-left py-2">Miles</th>
-                    <th class="text-left py-2">Deskripsi</th>
-                    <th class="text-left py-2">Tanggal</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in recent_transactions %}
-                <tr class="border-b">
-                    <td class="py-2">{{ t.get_type_display }}</td>
-                    <td class="py-2">{{ t.miles }}</td>
-                    <td class="py-2">{{ t.description|default:"-" }}</td>
-                    <td class="py-2">{{ t.created_at|date:"d/m/Y" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="text-gray-500">Belum ada transaksi</p>
-        {% endif %}
-    </div>
-
-    {% elif user.role == 'staf' %}
+    {% elif role == 'staf' and staf %}
     <!-- Staff-specific Info -->
     <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-xl font-bold mb-4">Informasi Staf</h2>
         <div class="grid md:grid-cols-2 gap-4">
             <div>
                 <p class="text-gray-600">ID Staf</p>
-                <p class="font-medium text-lg">{{ user.staff_id|default:"-" }}</p>
+                <p class="font-medium text-lg">{{ staf.id_staf|default:"-" }}</p>
             </div>
             <div>
-                <p class="text-gray-600">Maskapai</p>
-                <p class="font-medium text-lg">{{ user.airline|default:"-" }}</p>
-            </div>
-            <div>
-                <p class="text-gray-600">Klaim Menunggu</p>
-                <p class="font-medium text-lg text-yellow-600">{{ pending_claims_count }}</p>
-            </div>
-            <div>
-                <p class="text-gray-600">Klaim Disetujui</p>
-                <p class="font-medium text-lg text-green-600">{{ approved_count }}</p>
-            </div>
-            <div>
-                <p class="text-gray-600">Klaim Ditolak</p>
-                <p class="font-medium text-lg text-red-600">{{ rejected_count }}</p>
+                <p class="text-gray-600">Maskapai Penugasan</p>
+                <p class="font-medium text-lg">{{ staf.kode_maskapai|default:"-" }}</p>
             </div>
         </div>
     </div>

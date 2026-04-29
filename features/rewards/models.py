@@ -2,43 +2,45 @@ from django.db import models
 
 
 class Reward(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    miles_cost = models.IntegerField()
-    stock = models.IntegerField(default=0)
-    provider = models.CharField(max_length=255, blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Map to HADIAH table - read only"""
+    kode_hadiah = models.CharField(max_length=20, primary_key=True)
+    nama = models.CharField(max_length=100)
+    miles = models.IntegerField()
+    deskripsi = models.TextField(blank=True)
+    valid_start_date = models.DateField()
+    program_end = models.DateField()
+
+    class Meta:
+        db_table = 'hadiah'
+        managed = False
 
     def __str__(self):
-        return self.name
+        return f"{self.kode_hadiah} - {self.nama}"
 
 
 class Redemption(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('processed', 'Processed'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    ]
+    """Map to REDEEM table - read only"""
+    email_member = models.CharField(max_length=100)
+    kode_hadiah = models.CharField(max_length=20)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
-    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
-    reward = models.ForeignKey(Reward, on_delete=models.CASCADE)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    miles_used = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        db_table = 'redeem'
+        managed = False
 
     def __str__(self):
-        return f"{self.user} - {self.reward}"
+        return f"{self.email_member} - {self.kode_hadiah}"
 
 
 class Package(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=12, decimal_places=2)
-    miles_bonus = models.IntegerField()
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Map to AWARD_MILES_PACKAGE table - read only"""
+    id = models.CharField(max_length=20, primary_key=True)
+    harga_paket = models.DecimalField(max_digits=15, decimal_places=2)
+    jumlah_award_miles = models.IntegerField()
+
+    class Meta:
+        db_table = 'award_miles_package'
+        managed = False
 
     def __str__(self):
-        return self.name
+        return f"{self.id} - {self.jumlah_award_miles} miles"

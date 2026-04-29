@@ -6,35 +6,254 @@
 <div class="space-y-6">
     <h1 class="text-3xl font-bold">Kelola Member</h1>
 
+    <!-- Search & Filter -->
     <div class="bg-white p-6 rounded-lg shadow">
-        {% if members %}
+        <form method="get" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <input type="text" name="search" value="{{ search }}" placeholder="Cari nama/email/nomor..."
+                       class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <select name="tier" class="p-2 border rounded">
+                    <option value="">Semua Tier</option>
+                    <option value="basic" {% if tier_filter == 'basic' %}selected{% endif %}>Basic</option>
+                    <option value="silver" {% if tier_filter == 'silver' %}selected{% endif %}>Silver</option>
+                    <option value="gold" {% if tier_filter == 'gold' %}selected{% endif %}>Gold</option>
+                    <option value="platinum" {% if tier_filter == 'platinum' %}selected{% endif %}>Platinum</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Cari</button>
+            <button type="button" onclick="openModal('createModal')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Tambah Member</button>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
         <table class="w-full">
             <thead>
                 <tr class="border-b">
-                    <th class="text-left py-2">Member Number</th>
-                    <th class="text-left py-2">Nama</th>
+                    <th class="text-left py-2">Nomor Member</th>
+                    <th class="text-left py-2">Nama Lengkap</th>
                     <th class="text-left py-2">Email</th>
                     <th class="text-left py-2">Tier</th>
                     <th class="text-left py-2">Total Miles</th>
-                    <th class="text-left py-2">Join Date</th>
+                    <th class="text-left py-2">Award Miles</th>
+                    <th class="text-left py-2">Bergabung</th>
+                    <th class="text-left py-2">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 {% for m in members %}
-                <tr class="border-b">
+                <tr class="border-b hover:bg-gray-50">
                     <td class="py-2">{{ m.member_number|default:"-" }}</td>
                     <td class="py-2">{{ m.get_full_name }}</td>
                     <td class="py-2">{{ m.email }}</td>
-                    <td class="py-2 uppercase">{{ m.tier }}</td>
+                    <td class="py-2">
+                        <span class="px-2 py-1 rounded text-sm uppercase
+                            {% if m.tier == 'basic' %}bg-gray-200{% elif m.tier == 'silver' %}bg-gray-300{% elif m.tier == 'gold' %}bg-yellow-200{% else %}bg-purple-200{% endif %}">
+                            {{ m.tier }}
+                        </span>
+                    </td>
                     <td class="py-2">{{ m.total_miles }}</td>
+                    <td class="py-2">{{ m.award_miles }}</td>
                     <td class="py-2">{{ m.join_date }}</td>
+                    <td class="py-2">
+                        <button onclick="openEditModal({{ m.id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
+                        <button onclick="confirmDelete({{ m.id }}, '{{ m.email }}')" class="text-red-600 hover:underline">Hapus</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="py-4 text-center text-gray-500">Belum ada member</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-        <p class="text-gray-500">Belum ada member</p>
-        {% endif %}
     </div>
 </div>
+
+<!-- Create Modal -->
+<div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">Tambah Member Baru</h2>
+        <form id="createForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Email *</label>
+                <input type="email" name="email" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Password *</label>
+                <input type="password" name="password" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Salutation</label>
+                <input type="text" name="salutation" class="w-full p-2 border rounded" placeholder="Mr/Mrs/Ms">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Depan-Tengah</label>
+                <input type="text" name="first_mid_name" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Belakang *</label>
+                <input type="text" name="last_name" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Country Code</label>
+                <input type="text" name="country_code" class="w-full p-2 border rounded" placeholder="+62">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor HP</label>
+                <input type="text" name="phone" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Kewarganegaraan</label>
+                <input type="text" name="nationality" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Lahir</label>
+                <input type="date" name="birth_date" class="w-full p-2 border rounded">
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('createModal')" class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">Edit Member</h2>
+        <form id="editForm" class="space-y-4">
+            <input type="hidden" name="member_id" id="editMemberId">
+            <div>
+                <label class="block text-sm font-medium mb-1">Email</label>
+                <input type="email" id="editEmail" class="w-full p-2 border rounded bg-gray-100" disabled>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor Member</label>
+                <input type="text" id="editMemberNumber" class="w-full p-2 border rounded bg-gray-100" disabled>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Salutation</label>
+                <input type="text" name="salutation" id="editSalutation" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Depan-Tengah</label>
+                <input type="text" name="first_mid_name" id="editFirstMidName" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Belakang *</label>
+                <input type="text" name="last_name" id="editLastName" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Country Code</label>
+                <input type="text" name="country_code" id="editCountryCode" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor HP</label>
+                <input type="text" name="phone" id="editPhone" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Kewarganegaraan</label>
+                <input type="text" name="nationality" id="editNationality" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Lahir</label>
+                <input type="date" name="birth_date" id="editBirthDate" class="w-full p-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tier</label>
+                <select name="tier" id="editTier" class="w-full p-2 border rounded">
+                    <option value="basic">Basic</option>
+                    <option value="silver">Silver</option>
+                    <option value="gold">Gold</option>
+                    <option value="platinum">Platinum</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('editModal')" class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+        <h2 class="text-xl font-bold mb-4">Konfirmasi Hapus</h2>
+        <p class="mb-4">Yakin ingin hapus member <span id="deleteMemberEmail" class="font-bold"></span>?</p>
+        <form id="deleteForm" method="post">
+            {% csrf_token %}
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('deleteModal')" class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit" class="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+function confirmDelete(id, email) {
+    document.getElementById('deleteMemberEmail').textContent = email;
+    document.getElementById('deleteForm').action = `/members/${id}/delete/`;
+    openModal('deleteModal');
+}
+
+function openEditModal(id) {
+    fetch(`/members/${id}/edit/`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.member) {
+                document.getElementById('editMemberId').value = id;
+                document.getElementById('editEmail').value = data.member.email || '';
+                document.getElementById('editMemberNumber').value = data.member.member_number || '-';
+                document.getElementById('editSalutation').value = data.member.salutation || '';
+                document.getElementById('editFirstMidName').value = data.member.first_mid_name || '';
+                document.getElementById('editLastName').value = data.member.last_name || '';
+                document.getElementById('editCountryCode').value = data.member.country_code || '';
+                document.getElementById('editPhone').value = data.member.phone || '';
+                document.getElementById('editNationality').value = data.member.nationality || '';
+                document.getElementById('editBirthDate').value = data.member.birth_date || '';
+                document.getElementById('editTier').value = data.member.tier || 'basic';
+                document.getElementById('editForm').action = `/members/${id}/edit/`;
+                openModal('editModal');
+            }
+        });
+}
+
+document.getElementById('createForm').onsubmit = async function(e) {
+    e.preventDefault();
+    let formData = new FormData(this);
+    let response = await fetch('/members/create/', { method: 'POST', body: formData });
+    let result = await response.json();
+    if (result.success) {
+        alert(result.message);
+        closeModal('createModal');
+        location.reload();
+    } else {
+        alert(result.error);
+    }
+};
+
+document.getElementById('editForm').onsubmit = async function(e) {
+    e.preventDefault();
+    let formData = new FormData(this);
+    let id = document.getElementById('editMemberId').value;
+    let response = await fetch(`/members/${id}/edit/`, { method: 'POST', body: formData });
+    let result = await response.json();
+    if (result.success) {
+        alert(result.message);
+        closeModal('editModal');
+        location.reload();
+    } else {
+        alert(result.error);
+    }
+};
+</script>
 {% endblock %}

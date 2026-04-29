@@ -2,40 +2,28 @@ from django.db import models
 
 
 class Airline(models.Model):
-    code = models.CharField(max_length=3, unique=True)
-    name = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Map to MASKAPAI table"""
+    kode_maskapai = models.CharField(max_length=10, primary_key=True)
+    nama_maskapai = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'maskapai'
+        managed = False  # Don't create/modify table
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"{self.kode_maskapai} - {self.nama_maskapai}"
 
 
 class Flight(models.Model):
-    flight_number = models.CharField(max_length=20)
-    origin = models.CharField(max_length=3)
-    destination = models.CharField(max_length=3)
-    departure_time = models.DateTimeField()
-    arrival_time = models.DateTimeField()
-    miles_cost = models.IntegerField()
-    airline = models.ForeignKey(Airline, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Map to BANDARA table"""
+    iata_code = models.CharField(max_length=3, primary_key=True)
+    nama = models.CharField(max_length=100)
+    kota = models.CharField(max_length=100)
+    negara = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'bandara'
+        managed = False
 
     def __str__(self):
-        return self.flight_number
-
-
-class Booking(models.Model):
-    STATUS_CHOICES = [
-        ('confirmed', 'Confirmed'),
-        ('cancelled', 'Cancelled'),
-        ('completed', 'Completed'),
-    ]
-
-    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
-    flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='confirmed')
-    miles_used = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.user} - {self.flight}"
+        return f"{self.iata_code} - {self.nama}"

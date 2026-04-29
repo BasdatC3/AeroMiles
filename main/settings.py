@@ -22,6 +22,7 @@ def get_db_config():
     conn_string = os.getenv('NEON_CONNECTION_STRING', '')
     if conn_string:
         parsed = urlparse(conn_string)
+        options = {'sslmode': 'require'} if parsed.query else {}
         return {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': parsed.path.lstrip('/'),
@@ -29,7 +30,7 @@ def get_db_config():
             'PASSWORD': parsed.password,
             'HOST': parsed.hostname,
             'PORT': parsed.port or 5432,
-            'OPTIONS': {'sslmode': 'require'} if parsed.query else {},
+            'OPTIONS': options,
         }
     return {
         'ENGINE': 'django.db.backends.postgresql',
@@ -85,6 +86,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'main.context_processors.user_session',
             ],
         },
     },
@@ -103,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-AUTH_USER_MODEL = 'accounts.User'
+# Use default Django User model
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

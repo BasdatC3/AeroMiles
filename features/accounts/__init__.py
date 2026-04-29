@@ -1,0 +1,1 @@
+# Remove custom AUTH_USER_MODEL temporarily - use default Django User
