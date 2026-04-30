@@ -47,16 +47,6 @@ def manage_claims(request):
     })
 
 
-def manage_partners(request):
-    """Kelola Mitra - untuk Staf"""
-    user_email, role = get_user_from_request(request)
-    
-    from features.accounts.models import Mitra
-    partners = Mitra.objects.all()
-
-    return render(request, 'manage_partners.html', {'partners': partners})
-
-
 def transaction_report(request):
     """Laporan Transaksi - untuk Staf"""
     user_email, role = get_user_from_request(request)
