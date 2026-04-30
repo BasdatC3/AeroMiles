@@ -3,53 +3,92 @@
 {% block title %}Transfer Miles - AeroMiles{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <h1 class="text-3xl font-bold">Transfer Miles</h1>
+<div class="max-w-5xl mx-auto space-y-8">
 
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Transfer Miles ke Member Lain</h2>
-        <form method="post" class="space-y-4">
+    <!-- HEADER -->
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">Transfer Miles</h1>
+        <p class="text-gray-500">Kirim miles ke member lain</p>
+    </div>
+
+    <!-- FORM -->
+    <div class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-xl font-semibold mb-4">Kirim Miles</h2>
+
+        <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
             {% csrf_token %}
+
+            <!-- Email -->
             <div>
-                <label class="block text-sm font-medium mb-1">Email Penerima</label>
-                <input type="email" name="recipient_email" class="w-full p-2 border rounded" required>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                    Email Penerima
+                </label>
+                <input type="email" name="to_email"
+                       class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+                       placeholder="contoh@email.com" required>
             </div>
+
+            <!-- Jumlah -->
             <div>
-                <label class="block text-sm font-medium mb-1">Jumlah Miles</label>
-                <input type="number" name="miles" class="w-full p-2 border rounded" required>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                    Jumlah Miles
+                </label>
+                <input type="number" name="jumlah"
+                       class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+                       placeholder="1000" required>
             </div>
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Transfer</button>
+
+            <!-- Submit -->
+            <div class="md:col-span-2">
+                <button type="submit"
+                        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                    Transfer Sekarang
+                </button>
+            </div>
         </form>
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Riwayat Transfer</h2>
+    <!-- TABLE -->
+    <div class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-xl font-semibold mb-4">Riwayat Transfer</h2>
+
         {% if transfers %}
-        <table class="w-full">
-            <thead>
-                <tr class="border-b">
-                    <th class="text-left py-2">Pengirim</th>
-                    <th class="text-left py-2">Penerima</th>
-                    <th class="text-left py-2">Miles</th>
-                    <th class="text-left py-2">Status</th>
-                    <th class="text-left py-2">Tanggal</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in transfers %}
-                <tr class="border-b">
-                    <td class="py-2">{{ t.sender.email }}</td>
-                    <td class="py-2">{{ t.recipient.email }}</td>
-                    <td class="py-2">{{ t.miles }}</td>
-                    <td class="py-2">{{ t.get_status_display }}</td>
-                    <td class="py-2">{{ t.created_at|date:"d/m/Y" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-gray-600">
+                        <th class="text-left py-2">Dari</th>
+                        <th class="text-left py-2">Ke</th>
+                        <th class="text-left py-2">Jumlah</th>
+                        <th class="text-left py-2">Catatan</th>
+                        <th class="text-left py-2">Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transfers %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2 font-medium">{{ t.email_member_1 }}</td>
+                        <td class="py-2">{{ t.email_member_2 }}</td>
+                        <td class="py-2 font-semibold text-blue-600">
+                            {{ t.jumlah }}
+                        </td>
+                        <td class="py-2">
+                            {{ t.catatan|default:"-" }}
+                        </td>
+                        <td class="py-2">
+                            {{ t.timestamp|date:"d M Y H:i" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <p class="text-gray-500">Belum ada transfer</p>
+            <p class="text-gray-400 text-center py-6">
+                Belum ada transfer
+            </p>
         {% endif %}
     </div>
+
 </div>
 {% endblock %}

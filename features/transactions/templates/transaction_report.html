@@ -3,36 +3,115 @@
 {% block title %}Laporan Transaksi - AeroMiles{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <h1 class="text-3xl font-bold">Laporan Transaksi</h1>
+<div class="max-w-6xl mx-auto space-y-8">
 
-    <div class="bg-white p-6 rounded-lg shadow">
-        {% if transactions %}
-        <table class="w-full">
-            <thead>
-                <tr class="border-b">
-                    <th class="text-left py-2">Member</th>
-                    <th class="text-left py-2">Jenis</th>
-                    <th class="text-left py-2">Miles</th>
-                    <th class="text-left py-2">Deskripsi</th>
-                    <th class="text-left py-2">Tanggal</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in transactions %}
-                <tr class="border-b">
-                    <td class="py-2">{{ t.user.email }}</td>
-                    <td class="py-2">{{ t.get_type_display }}</td>
-                    <td class="py-2">{{ t.miles }}</td>
-                    <td class="py-2">{{ t.description|default:"-" }}</td>
-                    <td class="py-2">{{ t.created_at|date:"d/m/Y H:i" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- HEADER -->
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">Laporan Transaksi</h1>
+        <p class="text-gray-500">Ringkasan aktivitas member</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow text-center">
+            <p class="text-gray-500 text-sm">Total Member</p>
+            <p class="text-xl font-bold">{{ total_members }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow text-center">
+            <p class="text-gray-500 text-sm">Total Klaim</p>
+            <p class="text-xl font-bold">{{ total_claims }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow text-center">
+            <p class="text-gray-500 text-sm">Disetujui</p>
+            <p class="text-xl font-bold text-green-600">{{ approved_claims }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow text-center">
+            <p class="text-gray-500 text-sm">Ditolak</p>
+            <p class="text-xl font-bold text-red-600">{{ rejected_claims }}</p>
+        </div>
+    </div>
+
+    <!-- CLAIM TABLE -->
+    <div class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-xl font-semibold mb-4">Riwayat Klaim</h2>
+
+        {% if claims %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-gray-600">
+                        <th class="text-left py-2">Member</th>
+                        <th class="text-left py-2">Flight</th>
+                        <th class="text-left py-2">Rute</th>
+                        <th class="text-left py-2">Status</th>
+                        <th class="text-left py-2">Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in claims %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2">{{ c.email_member }}</td>
+                        <td class="py-2">{{ c.flight_number }}</td>
+                        <td class="py-2">{{ c.bandara_asal }} → {{ c.bandara_tujuan }}</td>
+
+                        <td class="py-2">
+                            <span class="px-2 py-1 rounded text-xs
+                                {% if c.status_penerimaan == 'Disetujui' %}
+                                    bg-green-100 text-green-700
+                                {% elif c.status_penerimaan == 'Ditolak' %}
+                                    bg-red-100 text-red-700
+                                {% else %}
+                                    bg-yellow-100 text-yellow-700
+                                {% endif %}
+                            ">
+                                {{ c.status_penerimaan }}
+                            </span>
+                        </td>
+
+                        <td class="py-2">{{ c.timestamp|date:"d M Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <p class="text-gray-500">Belum ada transaksi</p>
+            <p class="text-gray-400 text-center">Belum ada klaim</p>
         {% endif %}
     </div>
+
+    <!-- TRANSFER TABLE -->
+    <div class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-xl font-semibold mb-4">Riwayat Transfer</h2>
+
+        {% if transfers %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-gray-600">
+                        <th class="text-left py-2">Dari</th>
+                        <th class="text-left py-2">Ke</th>
+                        <th class="text-left py-2">Jumlah</th>
+                        <th class="text-left py-2">Catatan</th>
+                        <th class="text-left py-2">Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transfers %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2">{{ t.email_member_1 }}</td>
+                        <td class="py-2">{{ t.email_member_2 }}</td>
+                        <td class="py-2 font-medium">{{ t.jumlah }}</td>
+                        <td class="py-2">{{ t.catatan }}</td>
+                        <td class="py-2">{{ t.timestamp|date:"d M Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="text-gray-400 text-center">Belum ada transfer</p>
+        {% endif %}
+    </div>
+
 </div>
 {% endblock %}

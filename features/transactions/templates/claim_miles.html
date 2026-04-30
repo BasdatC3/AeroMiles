@@ -3,66 +3,123 @@
 {% block title %}Claim Miles - AeroMiles{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <h1 class="text-3xl font-bold">Claim Miles</h1>
+<div class="max-w-5xl mx-auto space-y-8">
 
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Ajukan Klaim Miles</h2>
-        <form method="post" class="space-y-4">
+    <!-- HEADER -->
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">Claim Miles</h1>
+        <p class="text-gray-500">Ajukan klaim miles dari penerbangan Anda</p>
+    </div>
+
+    <!-- FORM -->
+    <div class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-xl font-semibold mb-4 text-gray-700">Ajukan Klaim</h2>
+
+        <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
             {% csrf_token %}
+
+            <!-- Flight Number -->
             <div>
-                <label class="block text-sm font-medium mb-1">Jenis Klaim</label>
-                <select name="claim_type" class="w-full p-2 border rounded">
-                    <option value="missing">Missing Miles</option>
-                    <option value="bonus">Bonus Miles</option>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Flight Number</label>
+                <input type="text" name="flight_number"
+                       class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+                       placeholder="Contoh: GA123" required>
+            </div>
+
+            <!-- Kelas Kabin -->
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Kelas Kabin</label>
+                <select name="kelas_kabin"
+                        class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400">
+                    <option value="Economy">Economy</option>
+                    <option value="Business">Business</option>
+                    <option value="First">First</option>
                 </select>
             </div>
+
+            <!-- Bandara Asal -->
             <div>
-                <label class="block text-sm font-medium mb-1">Jumlah Miles</label>
-                <input type="number" name="miles" class="w-full p-2 border rounded" required>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Bandara Asal</label>
+                <input type="text" name="bandara_asal"
+                       class="w-full p-2 border rounded-lg"
+                       placeholder="CGK">
             </div>
+
+            <!-- Bandara Tujuan -->
             <div>
-                <label class="block text-sm font-medium mb-1">Flight Number</label>
-                <input type="text" name="flight_number" class="w-full p-2 border rounded" placeholder="e.g. GA123">
+                <label class="block text-sm font-medium text-gray-600 mb-1">Bandara Tujuan</label>
+                <input type="text" name="bandara_tujuan"
+                       class="w-full p-2 border rounded-lg"
+                       placeholder="DPS">
             </div>
+
+            <!-- Tanggal -->
             <div>
-                <label class="block text-sm font-medium mb-1">Deskripsi</label>
-                <textarea name="description" class="w-full p-2 border rounded" rows="3"></textarea>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Tanggal Penerbangan</label>
+                <input type="date" name="tanggal_penerbangan"
+                       class="w-full p-2 border rounded-lg">
             </div>
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Ajukan Klaim</button>
+
+            <!-- Submit -->
+            <div class="md:col-span-2">
+                <button type="submit"
+                        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                    Ajukan Klaim
+                </button>
+            </div>
         </form>
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Riwayat Klaim</h2>
+    <!-- TABLE -->
+    <div class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-xl font-semibold mb-4 text-gray-700">Riwayat Klaim</h2>
+
         {% if claims %}
-        <table class="w-full">
-            <thead>
-                <tr class="border-b">
-                    <th class="text-left py-2">Jenis</th>
-                    <th class="text-left py-2">Miles</th>
-                    <th class="text-left py-2">Status</th>
-                    <th class="text-left py-2">Tanggal</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for claim in claims %}
-                <tr class="border-b">
-                    <td class="py-2">{{ claim.get_claim_type_display }}</td>
-                    <td class="py-2">{{ claim.miles }}</td>
-                    <td class="py-2">
-                        <span class="px-2 py-1 rounded text-sm {% if claim.status == 'approved' %}bg-green-100 text-green-700{% elif claim.status == 'rejected' %}bg-red-100 text-red-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
-                            {{ claim.get_status_display }}
-                        </span>
-                    </td>
-                    <td class="py-2">{{ claim.created_at|date:"d/m/Y" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-gray-600">
+                        <th class="text-left py-2">Flight</th>
+                        <th class="text-left py-2">Rute</th>
+                        <th class="text-left py-2">Kabin</th>
+                        <th class="text-left py-2">Status</th>
+                        <th class="text-left py-2">Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for claim in claims %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2 font-medium">{{ claim.flight_number }}</td>
+                        <td class="py-2">{{ claim.bandara_asal }} → {{ claim.bandara_tujuan }}</td>
+                        <td class="py-2">{{ claim.kelas_kabin }}</td>
+
+                        <!-- STATUS BADGE -->
+                        <td class="py-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium
+                                {% if claim.status_penerimaan == 'Disetujui' %}
+                                    bg-green-100 text-green-700
+                                {% elif claim.status_penerimaan == 'Ditolak' %}
+                                    bg-red-100 text-red-700
+                                {% else %}
+                                    bg-yellow-100 text-yellow-700
+                                {% endif %}
+                            ">
+                                {{ claim.status_penerimaan }}
+                            </span>
+                        </td>
+
+                        <td class="py-2">
+                            {{ claim.tanggal_penerbangan|date:"d M Y" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <p class="text-gray-500">Belum ada klaim</p>
+            <p class="text-gray-400 text-center py-6">Belum ada klaim</p>
         {% endif %}
     </div>
+
 </div>
 {% endblock %}
