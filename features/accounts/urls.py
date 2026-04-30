@@ -21,4 +21,11 @@ urlpatterns = [
     path('members/create/', views.create_member, name='create_member'),
     path('members/<int:member_id>/edit/', views.edit_member, name='edit_member'),
     path('members/<int:member_id>/delete/', views.delete_member, name='delete_member'),
+
+    # manage partners
+    path('partners/', views.manage_partners, name='manage_partners'),
+    path('partners/create/', views.create_partner, name='create_partner'),
+    path('partners/<str:email>/detail/', views.partner_detail, name='partner_detail'),
+    path('partners/<str:email>/edit/', views.edit_partner, name='edit_partner'),
+    path('partners/<str:email>/delete/', views.delete_partner, name='delete_partner'),
 ]
