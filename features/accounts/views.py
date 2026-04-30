@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 import hashlib
-
+from django.db import models
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -496,3 +496,138 @@ def delete_member(request, member_id):
         messages.error(request, 'Member tidak ditemukan')
 
     return redirect('manage_members')
+
+# ─────────────────────────────────────────────
+#  FITUR 16: CRUD MANAJEMEN MITRA (Staf)
+# ─────────────────────────────────────────────
+
+def dictfetchall(cursor):
+    """Return all rows from a cursor as a dict"""
+    columns = [col[0] for col in cursor.description]
+    return [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
+
+def manage_partners(request):
+    user_email, role = get_user_from_request(request)
+    if role != 'staf':
+        return redirect('dashboard')
+
+    from features.accounts.models import Mitra
+    from django.db.models import Q
+
+    search = request.GET.get('search', '').strip()
+    mitra_list = list(Mitra.objects.all().order_by('nama_mitra').values(
+        'email_mitra', 'id_penyedia', 'nama_mitra', 'tanggal_kerja_sama'
+    ))
+
+    print("=== DEBUG ===", len(mitra_list), mitra_list[:1])  # cek di terminal
+
+    return render(request, 'manage_partners.html', {
+        'mitra_list': mitra_list,
+        'search': search,
+    })
+
+
+def partner_detail(request, email):
+    """Return detail mitra sebagai JSON untuk edit modal"""
+    from features.accounts.models import Mitra
+    try:
+        m = Mitra.objects.get(email_mitra=email)
+        return JsonResponse({'mitra': {
+            'email_mitra': m.email_mitra,
+            'id_penyedia': m.id_penyedia,
+            'nama_mitra': m.nama_mitra,
+            'tanggal_kerja_sama': str(m.tanggal_kerja_sama),
+        }})
+    except Mitra.DoesNotExist:
+        return JsonResponse({'error': 'Mitra tidak ditemukan'}, status=404)
+
+
+@require_POST
+def create_partner(request):
+    """Buat mitra baru (sekaligus buat entri PENYEDIA baru)"""
+    user_email, role = get_user_from_request(request)
+    if role != 'staf':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    from features.accounts.models import Mitra
+    from django.db import connection
+
+    email_mitra = request.POST.get('email_mitra', '').strip()
+    nama_mitra = request.POST.get('nama_mitra', '').strip()
+    tanggal = request.POST.get('tanggal_kerja_sama', '').strip()
+
+    if not all([email_mitra, nama_mitra, tanggal]):
+        return JsonResponse({'error': 'Semua field wajib harus diisi'})
+
+    if Mitra.objects.filter(email_mitra=email_mitra).exists():
+        return JsonResponse({'error': 'Email mitra sudah terdaftar'})
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM penyedia")
+            new_id = cursor.fetchone()[0]
+            
+            cursor.execute("INSERT INTO penyedia (id) VALUES (%s)", [new_id])
+            
+            cursor.execute(
+                "INSERT INTO mitra (email_mitra, id_penyedia, nama_mitra, tanggal_kerja_sama) VALUES (%s, %s, %s, %s)",
+                [email_mitra, new_id, nama_mitra, tanggal]
+            )
+        return JsonResponse({'success': True, 'message': f'Mitra {nama_mitra} berhasil ditambahkan (ID Penyedia: {new_id})'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
+
+@require_POST
+def edit_partner(request, email):
+    """Update data mitra (kecuali email dan id_penyedia)"""
+    user_email, role = get_user_from_request(request)
+    if role != 'staf':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    from django.db import connection
+
+    nama_mitra = request.POST.get('nama_mitra', '').strip()
+    tanggal = request.POST.get('tanggal_kerja_sama', '').strip()
+
+    if not all([nama_mitra, tanggal]):
+        return JsonResponse({'error': 'Semua field wajib harus diisi'})
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE mitra SET nama_mitra=%s, tanggal_kerja_sama=%s WHERE email_mitra=%s",
+                [nama_mitra, tanggal, email]
+            )
+        return JsonResponse({'success': True, 'message': 'Mitra berhasil diperbarui'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
+
+
+@require_POST
+def delete_partner(request, email):
+    """Hapus mitra (CASCADE ke hadiah via PENYEDIA)"""
+    user_email, role = get_user_from_request(request)
+    if role != 'staf':
+        return redirect('dashboard')
+
+    from features.accounts.models import Mitra
+    from django.db import connection
+
+    try:
+        m = Mitra.objects.get(email_mitra=email)
+        pid = m.id_penyedia
+        with connection.cursor() as cursor:
+            # Hapus mitra dulu (ON DELETE CASCADE di DB akan hapus hadiah terkait)
+            cursor.execute("DELETE FROM mitra WHERE email_mitra=%s", [email])
+            # Hapus penyedia
+            cursor.execute("DELETE FROM penyedia WHERE id=%s", [pid])
+        messages.success(request, f'Mitra berhasil dihapus.')
+    except Mitra.DoesNotExist:
+        messages.error(request, 'Mitra tidak ditemukan.')
+    except Exception as e:
+        messages.error(request, str(e))
+
+    return redirect('manage_partners')

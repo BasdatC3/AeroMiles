@@ -6,9 +6,183 @@
 <div class="space-y-6">
     <h1 class="text-3xl font-bold">Kelola Mitra</h1>
 
+    <!-- Search & Add -->
     <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Daftar Mitra</h2>
-        <p class="text-gray-600">Fitur kelola mitra dalam pengembangan.</p>
+        <form method="get" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <input type="text" name="search" value="{{ search }}" placeholder="Cari nama / email mitra..."
+                    class="w-full p-2 border rounded">
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Cari</button>
+            <button type="button" onclick="openModal('createModal')"
+                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">+ Tambah Mitra</button>
+        </form>
+    </div>
+
+    <!-- Note -->
+    <p class="text-sm text-gray-500 italic">
+        * Menambah Mitra baru akan otomatis membuat entri Penyedia baru dan mengasosiasikannya.
+    </p>
+
+    <!-- Table -->
+    <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Email Mitra</th>
+                    <th class="text-left py-2">ID Penyedia</th>
+                    <th class="text-left py-2">Nama Mitra</th>
+                    <th class="text-left py-2">Tanggal Kerja Sama</th>
+                    <th class="text-left py-2">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mitra_list %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-2 text-blue-600">{{ m.email_mitra }}</td>
+                    <td class="py-2 font-mono text-gray-500 text-sm">{{ m.id_penyedia }}</td>
+                    <td class="py-2 font-medium">{{ m.nama_mitra }}</td>
+                    <td class="py-2 text-gray-500">{{ m.tanggal_kerja_sama }}</td>
+                    <td class="py-2">
+                        <button onclick="openEditModal('{{ m.email_mitra }}')"
+                            class="text-blue-600 hover:underline mr-2">Edit</button>
+                        <button onclick="confirmDelete('{{ m.email_mitra }}', '{{ m.nama_mitra }}')"
+                            class="text-red-600 hover:underline">Hapus</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="py-6 text-center text-gray-500">Belum ada mitra</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
+
+<!-- ===== CREATE MODAL ===== -->
+<div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h2 class="text-xl font-bold mb-4">Tambah Mitra Baru</h2>
+        <form id="createForm" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Email Mitra *</label>
+                <input type="email" name="email_mitra" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Mitra *</label>
+                <input type="text" name="nama_mitra" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Kerja Sama *</label>
+                <input type="date" name="tanggal_kerja_sama" class="w-full p-2 border rounded" required>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('createModal')"
+                    class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit"
+                    class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== EDIT MODAL ===== -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h2 class="text-xl font-bold mb-4">Edit Mitra</h2>
+        <form id="editForm" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Email Mitra</label>
+                <input type="email" id="editEmail" class="w-full p-2 border rounded bg-gray-100 text-gray-500" disabled>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama Mitra *</label>
+                <input type="text" name="nama_mitra" id="editNama" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Kerja Sama *</label>
+                <input type="date" name="tanggal_kerja_sama" id="editTanggal" class="w-full p-2 border rounded"
+                    required>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('editModal')"
+                    class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit"
+                    class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== DELETE MODAL ===== -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
+        <h2 class="text-xl font-bold mb-2">Hapus Mitra?</h2>
+        <p class="mb-2">Yakin ingin hapus mitra <span id="deleteMitraNama" class="font-bold"></span>?</p>
+        <p class="text-sm text-orange-600 mb-4">Penghapusan mitra akan berpengaruh pada hadiah yang disediakan oleh
+            mitra ini.</p>
+        <form id="deleteForm" method="post">
+            {% csrf_token %}
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal('deleteModal')"
+                    class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
+                <button type="submit" class="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+        document.getElementById(id).classList.add('flex');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+        document.getElementById(id).classList.remove('flex');
+    }
+
+    function openEditModal(email) {
+        fetch(`/partners/${encodeURIComponent(email)}/detail/`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.mitra) {
+                    const m = data.mitra;
+                    document.getElementById('editEmail').value = m.email_mitra;
+                    document.getElementById('editNama').value = m.nama_mitra;
+                    document.getElementById('editTanggal').value = m.tanggal_kerja_sama;
+                    document.getElementById('editForm').action = `/partners/${encodeURIComponent(m.email_mitra)}/edit/`;
+                    openModal('editModal');
+                }
+            });
+    }
+
+    function confirmDelete(email, nama) {
+        document.getElementById('deleteMitraNama').textContent = nama;
+        document.getElementById('deleteForm').action = `/partners/${encodeURIComponent(email)}/delete/`;
+        openModal('deleteModal');
+    }
+
+    document.getElementById('createForm').onsubmit = async function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const response = await fetch('/partners/create/', { method: 'POST', body: formData });
+        const result = await response.json();
+        if (result.success) { alert(result.message); closeModal('createModal'); location.reload(); }
+        else { alert(result.error); }
+    };
+
+    document.getElementById('editForm').onsubmit = async function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const url = document.getElementById('editForm').action;
+        const response = await fetch(url, { method: 'POST', body: formData });
+        const result = await response.json();
+        if (result.success) { alert(result.message); closeModal('editModal'); location.reload(); }
+        else { alert(result.error); }
+    };
+</script>
 {% endblock %}
