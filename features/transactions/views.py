@@ -13,9 +13,7 @@ def get_user_from_request(request):
 def claim_miles(request):
     """Klaim Miles - untuk Member"""
     user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-
+    
     from features.accounts.models import ClaimMissingMiles
     claims = ClaimMissingMiles.objects.filter(email_member=user_email).order_by('-timestamp')
 
@@ -25,9 +23,7 @@ def claim_miles(request):
 def transfer_miles(request):
     """Transfer Miles - untuk Member"""
     user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-
+    
     from features.accounts.models import TransferMiles
     transfers = TransferMiles.objects.filter(email_member_1=user_email).order_by('-timestamp')
 
@@ -37,9 +33,7 @@ def transfer_miles(request):
 def manage_claims(request):
     """Kelola Klaim - untuk Staf"""
     user_email, role = get_user_from_request(request)
-    if role != 'staf':
-        return redirect('dashboard')
-
+    
     from features.accounts.models import ClaimMissingMiles
     claims = ClaimMissingMiles.objects.all().order_by('-timestamp')
     status_filter = request.GET.get('status', '')
@@ -56,9 +50,7 @@ def manage_claims(request):
 def transaction_report(request):
     """Laporan Transaksi - untuk Staf"""
     user_email, role = get_user_from_request(request)
-    if role != 'staf':
-        return redirect('dashboard')
-
+    
     from features.accounts.models import Member, ClaimMissingMiles, Redeem
     stats = {
         'total_members': Member.objects.count(),

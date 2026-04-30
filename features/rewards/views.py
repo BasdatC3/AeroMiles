@@ -13,9 +13,7 @@ def get_user_from_request(request):
 def redeem_rewards(request):
     """Redeem Hadiah - untuk Member"""
     user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-
+    
     from features.accounts.models import Hadiah, Member
     rewards = Hadiah.objects.all()
     member = Member.objects.get(email=user_email)
@@ -26,9 +24,7 @@ def redeem_rewards(request):
 def buy_packages(request):
     """Beli Package - untuk Member"""
     user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-
+    
     from features.accounts.models import AwardMilesPackage, Member
     packages = AwardMilesPackage.objects.all()
     member = Member.objects.get(email=user_email)
@@ -39,9 +35,7 @@ def buy_packages(request):
 def tier_info(request):
     """Info Tier - untuk Member"""
     user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-
+    
     from features.accounts.models import Tier
     tiers = Tier.objects.all()
 
@@ -229,9 +223,7 @@ def edit_hadiah(request, kode):
 def delete_hadiah(request, kode):
     """Hapus hadiah (hanya yang sudah kadaluarsa)"""
     user_email, role = get_user_from_request(request)
-    if role != 'staf':
-        return redirect('dashboard')
-
+    
     from features.accounts.models import Hadiah
     from datetime import date
     from django.db import connection

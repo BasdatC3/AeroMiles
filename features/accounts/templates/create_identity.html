@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Tambah Identitas - AeroMiles{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Tambah Identitas</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor Dokumen *</label>
+                <input type="text" name="nomor" class="w-full p-2 border rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Jenis *</label>
+                <select name="jenis" class="w-full p-2 border rounded" required>
+                    <option value="">Pilih Jenis</option>
+                    <option value="Paspor">Paspor</option>
+                    <option value="KTP">KTP</option>
+                    <option value="SIM">SIM</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Negara Penerbit</label>
+                <input type="text" name="negara_penerbit" class="w-full p-2 border rounded">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Terbit</label>
+                <input type="date" name="tanggal_terbit" class="w-full p-2 border rounded">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Habis</label>
+                <input type="date" name="tanggal_habis" class="w-full p-2 border rounded">
+            </div>
+
+            <div class="flex gap-4">
+                <a href="{% url 'identity' %}" class="flex-1 bg-gray-300 text-center py-2 rounded hover:bg-gray-400">Batal</a>
+                <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
