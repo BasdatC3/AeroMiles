@@ -414,3 +414,45 @@ INSERT INTO REDEEM (email_member, kode_hadiah, timestamp) VALUES
 ('member15@gmail.com', 'RWD-005', '2024-04-24 10:00:00'), ('member16@gmail.com', 'RWD-006', '2024-04-25 10:00:00'),
 ('member17@gmail.com', 'RWD-007', '2024-04-26 10:00:00'), ('member18@gmail.com', 'RWD-008', '2024-04-27 10:00:00'),
 ('member19@gmail.com', 'RWD-009', '2024-04-28 10:00:00'), ('member20@gmail.com', 'RWD-010', '2024-04-29 10:00:00');
+
+INSERT INTO PENYEDIA (id) VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10);
+
+INSERT INTO MASKAPAI (kode_maskapai, nama_maskapai, id_penyedia) VALUES
+('GA', 'Garuda Indonesia', 1), ('SQ', 'Singapore Airlines', 2),
+('QZ', 'Indonesia AirAsia', 3), ('JT', 'Lion Air', 4), ('AK', 'AirAsia', 5);
+
+INSERT INTO STAF (email, id_staf, kode_maskapai) VALUES
+('staf1@aeromiles.com', 'S0001', 'GA'), ('staf2@aeromiles.com', 'S0002', 'SQ'),
+('staf3@aeromiles.com', 'S0003', 'QZ'), ('staf4@aeromiles.com', 'S0004', 'JT'),
+('staf5@aeromiles.com', 'S0005', 'AK'), ('staf6@aeromiles.com', 'S0006', 'GA'),
+('staf7@aeromiles.com', 'S0007', 'SQ'), ('staf8@aeromiles.com', 'S0008', 'QZ'),
+('staf9@aeromiles.com', 'S0009', 'JT'), ('staf10@aeromiles.com', 'S0010', 'AK');
+
+INSERT INTO MITRA (email_mitra, id_penyedia, nama_mitra, tanggal_kerja_sama) VALUES
+('contact@traveloka.com', 6, 'Traveloka', '2020-01-01'), ('halo@tiket.com', 7, 'Tiket.com', '2021-05-15'),
+('admin@booking.com', 8, 'Booking.com', '2019-10-10'), ('info@agoda.com', 9, 'Agoda', '2018-02-20'),
+('support@blibli.com', 10, 'Blibli', '2022-07-07');
+
+INSERT INTO HADIAH (kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia) VALUES
+('RWD-001', 'Voucher Hotel', 5000, 'Potongan 500rb', '2024-01-01', '2024-12-31', 6),
+('RWD-002', 'Upgrade Business', 15000, 'Upgrade kelas penerbangan', '2024-01-01', '2024-12-31', 1),
+('RWD-003', 'Akses Lounge', 3000, 'Akses ruang tunggu premium', '2024-01-01', '2024-12-31', 1),
+('RWD-004', 'Voucher Resto', 2000, 'Makan gratis 200rb', '2024-01-01', '2024-12-31', 7),
+('RWD-005', 'Merchandise', 1000, 'Kaos eksklusif', '2024-01-01', '2024-12-31', 8),
+('RWD-006', 'Voucher Taksi', 500, 'Diskon taksi bandara', '2024-01-01', '2024-12-31', 9),
+('RWD-007', 'Ekstra Bagasi 10kg', 4000, 'Tambahan kapasitas bagasi', '2024-01-01', '2024-12-31', 2),
+('RWD-008', 'Voucher Belanja', 3500, 'Voucher e-commerce', '2024-01-01', '2024-12-31', 10),
+('RWD-009', 'Asuransi Perjalanan', 2500, 'Asuransi gratis untuk 1 trip', '2024-01-01', '2024-12-31', 3),
+('RWD-010', 'Priority Boarding', 1500, 'Naik pesawat lebih dulu', '2024-01-01', '2024-12-31', 4);
+
+INSERT INTO REDEEM (email_member, kode_hadiah, timestamp) VALUES
+('member1@gmail.com', 'RWD-001', '2024-04-10 10:00:00'), ('member2@gmail.com', 'RWD-002', '2024-04-11 10:00:00'),
+('member3@gmail.com', 'RWD-003', '2024-04-12 10:00:00'), ('member4@gmail.com', 'RWD-004', '2024-04-13 10:00:00'),
+('member5@gmail.com', 'RWD-005', '2024-04-14 10:00:00'), ('member6@gmail.com', 'RWD-006', '2024-04-15 10:00:00'),
+('member7@gmail.com', 'RWD-007', '2024-04-16 10:00:00'), ('member8@gmail.com', 'RWD-008', '2024-04-17 10:00:00'),
+('member9@gmail.com', 'RWD-009', '2024-04-18 10:00:00'), ('member10@gmail.com', 'RWD-010', '2024-04-19 10:00:00'),
+('member11@gmail.com', 'RWD-001', '2024-04-20 10:00:00'), ('member12@gmail.com', 'RWD-002', '2024-04-21 10:00:00'),
+('member13@gmail.com', 'RWD-003', '2024-04-22 10:00:00'), ('member14@gmail.com', 'RWD-004', '2024-04-23 10:00:00'),
+('member15@gmail.com', 'RWD-005', '2024-04-24 10:00:00'), ('member16@gmail.com', 'RWD-006', '2024-04-25 10:00:00'),
+('member17@gmail.com', 'RWD-007', '2024-04-26 10:00:00'), ('member18@gmail.com', 'RWD-008', '2024-04-27 10:00:00'),
+('member19@gmail.com', 'RWD-009', '2024-04-28 10:00:00'), ('member20@gmail.com', 'RWD-010', '2024-04-29 10:00:00');
