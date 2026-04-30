@@ -1,7 +1,5 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
 import hashlib
 
 
@@ -14,13 +12,6 @@ def get_user_from_request(request):
     user_email = request.session.get('user_email')
     user_role = request.session.get('user_role')
     return user_email, user_role
-
-
-# Import models from accounts (mapped to Neon tables)
-from features.accounts.models import (
-    Pengguna, Member, Staf, Identitas, Tier, Maskapai,
-    ClaimMissingMiles, Hadiah, Redeem, AwardMilesPackage
-)
 
 
 def landing(request):
@@ -45,12 +36,12 @@ def login_view(request):
 
         hashed = hash_password(password)
         try:
+            from features.accounts.models import Pengguna, Member, Staf
             pengguna = Pengguna.objects.get(email=email, password=hashed)
 
-            # Check member or staff
             try:
                 Member.objects.get(email=email)
-                messages.success(request, f'Welcome back!')
+                messages.success(request, 'Welcome back!')
                 request.session['user_email'] = email
                 request.session['user_role'] = 'member'
                 return redirect('dashboard')
@@ -59,7 +50,7 @@ def login_view(request):
 
             try:
                 Staf.objects.get(email=email)
-                messages.success(request, f'Welcome back!')
+                messages.success(request, 'Welcome back!')
                 request.session['user_email'] = email
                 request.session['user_role'] = 'staf'
                 return redirect('dashboard')
@@ -77,6 +68,7 @@ def register(request):
     if user_email:
         return redirect('dashboard')
 
+    from features.accounts.models import Tier, Maskapai
     tiers = Tier.objects.all()
     airlines = Maskapai.objects.all()
 
@@ -115,6 +107,7 @@ def register(request):
                 'tiers': tiers, 'airlines': airlines, 'role': selected_role
             })
 
+        from features.accounts.models import Pengguna
         if Pengguna.objects.filter(email=email).exists():
             messages.error(request, 'Email sudah terdaftar')
             return render(request, 'register.html', {
@@ -123,6 +116,7 @@ def register(request):
 
         try:
             from datetime import date
+            from features.accounts.models import Member, Staf
             Pengguna.objects.create(
                 email=email,
                 password=hash_password(password1),
@@ -173,10 +167,10 @@ def logout_view(request):
 
 def dashboard(request):
     user_email, role = get_user_from_request(request)
-
     if not user_email:
         return redirect('login')
 
+    from features.accounts.models import Pengguna, Member, Staf
     member_data = None
     staf_data = None
     pengguna = None
@@ -191,7 +185,6 @@ def dashboard(request):
             member_data = Member.objects.get(email=user_email)
         except Member.DoesNotExist:
             pass
-
     elif role == 'staf':
         try:
             staf_data = Staf.objects.get(email=user_email)
@@ -209,10 +202,10 @@ def dashboard(request):
 
 def profile(request):
     user_email, role = get_user_from_request(request)
-
     if not user_email:
         return redirect('login')
 
+    from features.accounts.models import Pengguna, Member
     try:
         pengguna = Pengguna.objects.get(email=user_email)
     except Pengguna.DoesNotExist:
@@ -246,7 +239,6 @@ def profile(request):
 
 def change_password(request):
     user_email, role = get_user_from_request(request)
-
     if not user_email:
         return redirect('login')
 
@@ -260,6 +252,7 @@ def change_password(request):
         elif new_password != confirm_password:
             messages.error(request, 'Password baru dan konfirmasi tidak cocok')
         else:
+            from features.accounts.models import Pengguna
             try:
                 pengguna = Pengguna.objects.get(email=user_email)
                 if pengguna.password == hash_password(old_password):
@@ -277,12 +270,20 @@ def change_password(request):
 
 def manage_identity(request):
     user_email, role = get_user_from_request(request)
+    from features.accounts.models import Identitas
 
     identities = []
     if user_email and role == 'member':
         identities = Identitas.objects.filter(email_member=user_email)
 
     return render(request, 'manage_identity.html', {'identities': identities})
+
+
+# ========== CRUD Identity ==========
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from features.accounts.models import Identitas
 
 
 def create_identity(request):
@@ -359,13 +360,16 @@ def delete_identity(request, identity_id):
         identity.delete()
         messages.success(request, 'Identitas berhasil dihapus')
 
-    return redirect('manage_identity')
+    return redirect('identity')
 
 
-# ========== Staff Views - Member Management ==========
+# ========== CRUD Member (Staf) ==========
+from features.accounts.models import Member
+
 
 def manage_members(request):
     user_email, role = get_user_from_request(request)
+    from features.accounts.models import Tier
 
     if role != 'staf':
         return redirect('dashboard')
@@ -390,6 +394,7 @@ def manage_members(request):
 
 def create_member(request):
     user_email, role = get_user_from_request(request)
+    from features.accounts.models import Pengguna
 
     if role != 'staf':
         return redirect('dashboard')
@@ -473,6 +478,7 @@ def edit_member(request, member_id):
 def delete_member(request, member_id):
     member_id = str(member_id)
     user_email, role = get_user_from_request(request)
+    from features.accounts.models import Pengguna
 
     if role != 'staf':
         return redirect('dashboard')
@@ -490,78 +496,3 @@ def delete_member(request, member_id):
         messages.error(request, 'Member tidak ditemukan')
 
     return redirect('manage_members')
-
-# ========== View Placeholder untuk Team Lain ==========
-# Tim lainagar isi implementasi lengkap
-
-def claim_miles(request):
-    """Placeholder - Klaim Miles (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-    return render(request, 'claim_miles.html')
-
-
-def transfer_miles(request):
-    """Placeholder - Transfer Miles (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-    return render(request, 'transfer_miles.html')
-
-
-def redeem_rewards(request):
-    """Placeholder - Redeem Hadiah (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-    return render(request, 'redeem_rewards.html')
-
-
-def buy_packages(request):
-    """Placeholder - Beli Package (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-    return render(request, 'buy_packages.html')
-
-
-def tier_info(request):
-    """Placeholder - Info Tier (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if not user_email or role != 'member':
-        return redirect('login')
-    tiers = Tier.objects.all()
-    return render(request, 'tier_info.html', {'tiers': tiers})
-
-
-def manage_claims(request):
-    """Placeholder - Kelola Klaim (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if role != 'staf':
-        return redirect('dashboard')
-    return render(request, 'manage_claims.html')
-
-
-def manage_rewards(request):
-    """Placeholder - Kelola Hadiah (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if role != 'staf':
-        return redirect('dashboard')
-    return render(request, 'manage_rewards.html')
-
-
-def manage_partners(request):
-    """Placeholder - Kelola Mitra (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if role != 'staf':
-        return redirect('dashboard')
-    return render(request, 'manage_partners.html')
-
-
-def transaction_report(request):
-    """Placeholder - Laporan (untuk Team lain)"""
-    user_email, role = get_user_from_request(request)
-    if role != 'staf':
-        return redirect('dashboard')
-    return render(request, 'transaction_report.html')

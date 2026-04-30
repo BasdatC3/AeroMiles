@@ -10,24 +10,15 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('password/', views.change_password, name='change_password'),
 
-    # Member views
+    # Member - Identity
     path('identity/', views.manage_identity, name='identity'),
     path('identity/create/', views.create_identity, name='create_identity'),
     path('identity/<int:identity_id>/edit/', views.edit_identity, name='edit_identity'),
     path('identity/<int:identity_id>/delete/', views.delete_identity, name='delete_identity'),
-    path('claim-miles/', views.claim_miles, name='claim_miles'),
-    path('transfer-miles/', views.transfer_miles, name='transfer_miles'),
-    path('redeem-rewards/', views.redeem_rewards, name='redeem_rewards'),
-    path('buy-packages/', views.buy_packages, name='buy_packages'),
-    path('tier-info/', views.tier_info, name='tier_info'),
 
-    # Staff views
+    # Staff - Member Management
     path('members/', views.manage_members, name='manage_members'),
     path('members/create/', views.create_member, name='create_member'),
     path('members/<int:member_id>/edit/', views.edit_member, name='edit_member'),
     path('members/<int:member_id>/delete/', views.delete_member, name='delete_member'),
-    path('claims/', views.manage_claims, name='manage_claims'),
-    path('rewards/', views.manage_rewards, name='manage_rewards'),
-    path('partners/', views.manage_partners, name='manage_partners'),
-    path('report/', views.transaction_report, name='transaction_report'),
 ]
