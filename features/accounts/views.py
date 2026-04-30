@@ -169,7 +169,6 @@ def dashboard(request):
     user_email, role = get_user_from_request(request)
     if not user_email:
         return redirect('login')
-
     from features.accounts.models import Pengguna, Member, Staf
     member_data = None
     staf_data = None
@@ -204,7 +203,6 @@ def profile(request):
     user_email, role = get_user_from_request(request)
     if not user_email:
         return redirect('login')
-
     from features.accounts.models import Pengguna, Member
     try:
         pengguna = Pengguna.objects.get(email=user_email)
@@ -239,9 +237,7 @@ def profile(request):
 
 def change_password(request):
     user_email, role = get_user_from_request(request)
-    if not user_email:
-        return redirect('login')
-
+    
     if request.method == 'POST':
         old_password = request.POST.get('old_password', '')
         new_password = request.POST.get('new_password', '')
@@ -270,13 +266,20 @@ def change_password(request):
 
 def manage_identity(request):
     user_email, role = get_user_from_request(request)
+    if not user_email:
+        return redirect('login')
     from features.accounts.models import Identitas
 
     identities = []
+    if role != 'member':
+        return redirect('dashboard')
     if user_email and role == 'member':
         identities = Identitas.objects.filter(email_member=user_email)
 
-    return render(request, 'manage_identity.html', {'identities': identities})
+    return render(request, 'manage_identity.html', {
+        'identities': identities,
+        'user_email': user_email,
+    })
 
 
 # ========== CRUD Identity ==========
@@ -289,7 +292,7 @@ from features.accounts.models import Identitas
 def create_identity(request):
     user_email, role = get_user_from_request(request)
 
-    if request.method == 'POST' and user_email and role == 'member':
+    if request.method == 'POST':
         nomor = request.POST.get('nomor', '').strip()
         jenis = request.POST.get('jenis', '')
         negara_penerbit = request.POST.get('negara_penerbit', '').strip()
@@ -297,25 +300,26 @@ def create_identity(request):
         tanggal_habis = request.POST.get('tanggal_habis', '')
 
         if not nomor or not jenis:
-            return JsonResponse({'error': 'Nomor dokumen dan jenis wajib diisi'}, status=400)
+            messages.error(request, 'Nomor dokumen dan jenis wajib diisi')
+        elif Identitas.objects.filter(nomor=nomor).exists():
+            messages.error(request, 'Nomor dokumen sudah terdaftar')
+        else:
+            try:
+                Identitas.objects.create(
+                    nomor=nomor,
+                    email_member=user_email,
+                    jenis=jenis,
+                    negara_penerbit=negara_penerbit,
+                    tanggal_terbit=tanggal_terbit or None,
+                    tanggal_habis=tanggal_habis or None,
+                )
+                messages.success(request, 'Identitas berhasil ditambahkan')
+            except Exception as e:
+                messages.error(request, f'Error: {str(e)}')
 
-        if Identitas.objects.filter(nomor=nomor).exists():
-            return JsonResponse({'error': 'Nomor dokumen sudah terdaftar'}, status=400)
+        return redirect('identity')
 
-        try:
-            Identitas.objects.create(
-                nomor=nomor,
-                email_member=user_email,
-                jenis=jenis,
-                negara_penerbit=negara_penerbit,
-                tanggal_terbit=tanggal_terbit or None,
-                tanggal_habis=tanggal_habis or None,
-            )
-            return JsonResponse({'success': True, 'message': 'Identitas berhasil ditambahkan'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
-
-    return JsonResponse({'error': 'Invalid'}, status=405)
+    return render(request, 'create_identity.html', {'user_email': user_email})
 
 
 def edit_identity(request, identity_id):
@@ -371,9 +375,7 @@ def manage_members(request):
     user_email, role = get_user_from_request(request)
     from features.accounts.models import Tier
 
-    if role != 'staf':
-        return redirect('dashboard')
-
+    
     members = Member.objects.all()
     tiers = Tier.objects.all()
     search = request.GET.get('search', '').strip()
@@ -396,9 +398,7 @@ def create_member(request):
     user_email, role = get_user_from_request(request)
     from features.accounts.models import Pengguna
 
-    if role != 'staf':
-        return redirect('dashboard')
-
+    
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
@@ -448,9 +448,7 @@ def edit_member(request, member_id):
     member_id = str(member_id)
     user_email, role = get_user_from_request(request)
 
-    if role != 'staf':
-        return redirect('dashboard')
-
+    
     member = get_object_or_404(Member, email=member_id)
 
     if request.method == 'GET':
@@ -480,9 +478,7 @@ def delete_member(request, member_id):
     user_email, role = get_user_from_request(request)
     from features.accounts.models import Pengguna
 
-    if role != 'staf':
-        return redirect('dashboard')
-
+    
     try:
         member = Member.objects.get(email=member_id)
         member.delete()
