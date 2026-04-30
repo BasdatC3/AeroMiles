@@ -146,176 +146,51 @@ CREATE TABLE REDEEM (
 
 -- DML
 
-INSERT INTO PENGGUNA (
-    email,
-    password,
-    salutation,
-    first_mid_name,
-    last_name,
-    country_code,
-    mobile_number,
-    tanggal_lahir,
-    kewarganegaraan
-)
--- looping untuk 50 pengguna
-SELECT
-    'member' || g || '@email.com',
-    'password123',
-    CASE
-        WHEN g % 4 = 1 THEN 'Mr.'
-        WHEN g % 4 = 2 THEN 'Mrs.'
-        WHEN g % 4 = 3 THEN 'Ms.'
-        ELSE 'Dr.'
-    END,
-    'Member ' || g,
-    'Dummy',
-    '+62',
-    '8120000' || lpad(g::text, 4, '0'),
-    DATE '1990-01-01' + (g * INTERVAL '30 days'),
-    'Indonesia'
-FROM generate_series(1, 50) AS g;
+-- PENYEDIA
+INSERT INTO PENYEDIA (id) VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10);
 
--- insert data staf
-INSERT INTO PENGGUNA (
-    email,
-    password,
-    salutation,
-    first_mid_name,
-    last_name,
-    country_code,
-    mobile_number,
-    tanggal_lahir,
-    kewarganegaraan
-)
--- looping juga dilakukan di sini untuk 10 pengguna lainnya
-SELECT
-    'staf' || g || '@email.com',
-    'password123',
-    CASE
-        WHEN g % 4 = 1 THEN 'Mr.'
-        WHEN g % 4 = 2 THEN 'Mrs.'
-        WHEN g % 4 = 3 THEN 'Ms.'
-        ELSE 'Dr.'
-    END,
-    'Staf ' || g,
-    'Maskapai',
-    '+62',
-    '8130000' || lpad(g::text, 4, '0'),
-    DATE '1985-01-01' + (g * INTERVAL '60 days'),
-    'Indonesia'
-FROM generate_series(1, 10) AS g;
+-- MASKAPAI
+INSERT INTO MASKAPAI (kode_maskapai, nama_maskapai, id_penyedia) VALUES
+('GA', 'Garuda Indonesia', 1), ('SQ', 'Singapore Airlines', 2),
+('QZ', 'Indonesia AirAsia', 3), ('JT', 'Lion Air', 4), ('AK', 'AirAsia', 5);
 
-INSERT INTO TIER (
-    id_tier,
-    nama,
-    minimal_frekuensi_terbang,
-    minimal_tier_miles
-)
-VALUES
-('BRZ', 'Bronze', 0, 0),
-('SLV', 'Silver', 5, 10000),
-('GLD', 'Gold', 15, 30000),
-('PLT', 'Platinum', 30, 60000);
+-- STAF
+INSERT INTO STAF (email, id_staf, kode_maskapai) VALUES
+('staf1@aeromiles.com', 'S0001', 'GA'), ('staf2@aeromiles.com', 'S0002', 'SQ'),
+('staf3@aeromiles.com', 'S0003', 'QZ'), ('staf4@aeromiles.com', 'S0004', 'JT'),
+('staf5@aeromiles.com', 'S0005', 'AK'), ('staf6@aeromiles.com', 'S0006', 'GA'),
+('staf7@aeromiles.com', 'S0007', 'SQ'), ('staf8@aeromiles.com', 'S0008', 'QZ'),
+('staf9@aeromiles.com', 'S0009', 'JT'), ('staf10@aeromiles.com', 'S0010', 'AK');
 
-INSERT INTO PENYEDIA (id)
-SELECT g
-FROM generate_series(1, 10) AS g;
+-- MITRA
+INSERT INTO MITRA (email_mitra, id_penyedia, nama_mitra, tanggal_kerja_sama) VALUES
+('contact@traveloka.com', 6, 'Traveloka', '2020-01-01'), ('halo@tiket.com', 7, 'Tiket.com', '2021-05-15'),
+('admin@booking.com', 8, 'Booking.com', '2019-10-10'), ('info@agoda.com', 9, 'Agoda', '2018-02-20'),
+('support@blibli.com', 10, 'Blibli', '2022-07-07');
 
-INSERT INTO MEMBER (
-    email,
-    tanggal_bergabung,
-    id_tier,
-    award_miles,
-    total_miles
-)
--- looping untuk menentukan tier
-SELECT
-    'member' || g || '@email.com',
-    DATE '2023-01-01' + (g * INTERVAL '3 days'),
-    CASE
-        WHEN g <= 15 THEN 'BRZ'
-        WHEN g <= 30 THEN 'SLV'
-        WHEN g <= 45 THEN 'GLD'
-        ELSE 'PLT'
-    END,
-    g * 1000,
-    g * 1500
-FROM generate_series(1, 50) AS g;
+-- HADIAH
+INSERT INTO HADIAH (kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia) VALUES
+('RWD-001', 'Voucher Hotel', 5000, 'Potongan 500rb', '2024-01-01', '2024-12-31', 6),
+('RWD-002', 'Upgrade Business', 15000, 'Upgrade kelas penerbangan', '2024-01-01', '2024-12-31', 1),
+('RWD-003', 'Akses Lounge', 3000, 'Akses ruang tunggu premium', '2024-01-01', '2024-12-31', 1),
+('RWD-004', 'Voucher Resto', 2000, 'Makan gratis 200rb', '2024-01-01', '2024-12-31', 7),
+('RWD-005', 'Merchandise', 1000, 'Kaos eksklusif', '2024-01-01', '2024-12-31', 8),
+('RWD-006', 'Voucher Taksi', 500, 'Diskon taksi bandara', '2024-01-01', '2024-12-31', 9),
+('RWD-007', 'Ekstra Bagasi 10kg', 4000, 'Tambahan kapasitas bagasi', '2024-01-01', '2024-12-31', 2),
+('RWD-008', 'Voucher Belanja', 3500, 'Voucher e-commerce', '2024-01-01', '2024-12-31', 10),
+('RWD-009', 'Asuransi Perjalanan', 2500, 'Asuransi gratis untuk 1 trip', '2024-01-01', '2024-12-31', 3),
+('RWD-010', 'Priority Boarding', 1500, 'Naik pesawat lebih dulu', '2024-01-01', '2024-12-31', 4);
 
--- penyedia adalah sebuah maskapai ATAU mitra dan TIDAK KEDUANYA
-INSERT INTO MASKAPAI (
-    kode_maskapai,
-    nama_maskapai,
-    id_penyedia
-)
-VALUES
-('GA', 'Garuda Indonesia', 1),
-('JT', 'Lion Air', 2),
-('QZ', 'AirAsia Indonesia', 3),
-('ID', 'Batik Air', 4),
-('SJ', 'Sriwijaya Air', 5);
+-- REDEEM
+INSERT INTO REDEEM (email_member, kode_hadiah, timestamp) VALUES
+('member1@gmail.com', 'RWD-001', '2024-04-10 10:00:00'), ('member2@gmail.com', 'RWD-002', '2024-04-11 10:00:00'),
+('member3@gmail.com', 'RWD-003', '2024-04-12 10:00:00'), ('member4@gmail.com', 'RWD-004', '2024-04-13 10:00:00'),
+('member5@gmail.com', 'RWD-005', '2024-04-14 10:00:00'), ('member6@gmail.com', 'RWD-006', '2024-04-15 10:00:00'),
+('member7@gmail.com', 'RWD-007', '2024-04-16 10:00:00'), ('member8@gmail.com', 'RWD-008', '2024-04-17 10:00:00'),
+('member9@gmail.com', 'RWD-009', '2024-04-18 10:00:00'), ('member10@gmail.com', 'RWD-010', '2024-04-19 10:00:00'),
+('member11@gmail.com', 'RWD-001', '2024-04-20 10:00:00'), ('member12@gmail.com', 'RWD-002', '2024-04-21 10:00:00'),
+('member13@gmail.com', 'RWD-003', '2024-04-22 10:00:00'), ('member14@gmail.com', 'RWD-004', '2024-04-23 10:00:00'),
+('member15@gmail.com', 'RWD-005', '2024-04-24 10:00:00'), ('member16@gmail.com', 'RWD-006', '2024-04-25 10:00:00'),
+('member17@gmail.com', 'RWD-007', '2024-04-26 10:00:00'), ('member18@gmail.com', 'RWD-008', '2024-04-27 10:00:00'),
+('member19@gmail.com', 'RWD-009', '2024-04-28 10:00:00'), ('member20@gmail.com', 'RWD-010', '2024-04-29 10:00:00');
 
-INSERT INTO MITRA (
-    email_mitra,
-    id_penyedia,
-    nama_mitra,
-    tanggal_kerja_sama
-)
-VALUES
-('hotel@mitra.com', 6, 'Aero Hotel Group', DATE '2022-01-10'),
-('rental@mitra.com', 7, 'Aero Rental Car', DATE '2022-03-15'),
-('travel@mitra.com', 8, 'Aero Travel Partner', DATE '2022-06-20'),
-('shop@mitra.com', 9, 'Aero Lifestyle Shop', DATE '2023-02-05'),
-('bank@mitra.com', 10, 'Aero Bank Partner', DATE '2023-05-12'); 
-
-INSERT INTO STAF (
-    email,
-    kode_maskapai
-)
--- looping untuk menentukan maskapai untuk staf
-SELECT
-    'staf' || g || '@email.com',
-    CASE
-        WHEN g % 5 = 1 THEN 'GA'
-        WHEN g % 5 = 2 THEN 'JT'
-        WHEN g % 5 = 3 THEN 'QZ'
-        WHEN g % 5 = 4 THEN 'ID'
-        ELSE 'SJ'
-    END
-FROM generate_series(1, 10) AS g;
-
-INSERT INTO HADIAH (
-    nama,
-    miles,
-    deskripsi,
-    valid_start_date,
-    program_end,
-    id_penyedia
-)
-VALUES
-('Upgrade Bagasi Garuda', 8000, 'Tambahan kuota bagasi untuk penerbangan Garuda.', DATE '2024-01-01', DATE '2026-12-31', 1),
-('Voucher Lion Air', 6500, 'Voucher penerbangan Lion Air.', DATE '2024-01-01', DATE '2026-12-31', 2),
-('AirAsia Seat Selection', 2500, 'Gratis pilihan kursi AirAsia.', DATE '2024-01-01', DATE '2026-12-31', 3),
-('Batik Air Lounge', 9000, 'Akses lounge untuk penerbangan Batik Air.', DATE '2024-01-01', DATE '2026-12-31', 4),
-('Sriwijaya Priority Check-in', 4000, 'Layanan priority check-in Sriwijaya Air.', DATE '2024-01-01', DATE '2026-12-31', 5),
-('Voucher Hotel 1 Malam', 5000, 'Voucher menginap satu malam di hotel partner.', DATE '2024-01-01', DATE '2026-12-31', 6),
-('Diskon Rental Mobil', 3000, 'Potongan harga rental mobil partner.', DATE '2024-01-01', DATE '2026-12-31', 7),
-('Travel Voucher', 7000, 'Voucher perjalanan dari mitra travel.', DATE '2024-02-01', DATE '2026-12-31', 8),
-('Lifestyle Gift Card', 4500, 'Gift card untuk toko lifestyle partner.', DATE '2024-02-01', DATE '2026-12-31', 9),
-('Bank Reward Voucher', 6000, 'Voucher reward dari bank partner.', DATE '2024-03-01', DATE '2026-12-31', 10);
-
-INSERT INTO REDEEM (
-    email_member,
-    kode_hadiah,
-    timestamp
-)
-SELECT
-    'member' || g || '@email.com',
-    'RWD-' || lpad((((g - 1) % 10) + 1)::text, 3, '0'),
-    TIMESTAMP '2024-05-01 11:00:00' + (g * INTERVAL '1 day')
-FROM generate_series(1, 20) AS g;
-
-SELECT setval(pg_get_serial_sequence('penyedia', 'id'), 10, true);
-SELECT setval('seq_member_nomor', 50, true);
-SELECT setval('seq_staf_id', 10, true);
-SELECT setval('seq_hadiah_kode', 10, true);
