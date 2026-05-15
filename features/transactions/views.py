@@ -1,10 +1,24 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.db import connection
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from main.db import execute_query, execute_write
 from features.accounts.views import get_user_from_request as get_session_user
+
+
+def dict_fetchall(cursor):
+    columns = [column[0] for column in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+def format_number(value):
+    return f"{int(value or 0):,}".replace(",", ".")
+
+
+def format_rupiah(value):
+    return f"Rp {format_number(value)}"
 
 
 def claim_miles(request):
@@ -152,7 +166,7 @@ def reject_claim(request, id):
 
 
 def transaction_report(request):
-    user_email, role = get_user_from_request(request)
+    user_email, role = get_session_user(request)
 
     if not user_email:
         return redirect('login')

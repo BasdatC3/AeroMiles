@@ -28,19 +28,6 @@ def format_rupiah(value):
     return f"Rp {format_number(value)}"
 
 
-def dict_fetchall(cursor):
-    columns = [column[0] for column in cursor.description]
-    return [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-
-def format_number(value):
-    return f"{int(value or 0):,}".replace(",", ".")
-
-
-def format_rupiah(value):
-    return f"Rp {format_number(value)}"
-
-
 def get_user_from_request(request):
     user_email = request.session.get('user_email')
     user_role = request.session.get('user_role')
@@ -157,110 +144,6 @@ def redeem_rewards(request):
         """)
         rewards = dict_fetchall(cursor)
 
-        cursor.execute("""
-            SELECT
-                r.kode_hadiah,
-                h.nama,
-                h.miles,
-                r.timestamp
-            FROM redeem r
-            JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
-            WHERE r.email_member = %s
-            ORDER BY r.timestamp DESC
-        """, [user_email])
-        redeem_history = dict_fetchall(cursor)
-
-    for reward in rewards:
-        reward['miles_display'] = format_number(reward['jumlah_miles_dibutuhkan'])
-    for item in redeem_history:
-        item['miles_display'] = format_number(item['miles'])
-
-    active_tab = request.GET.get('tab', 'catalog')
-    if active_tab not in ('catalog', 'history'):
-        active_tab = 'catalog'
-
-    return render(request, 'redeem_rewards.html', {
-        'member': member,
-        'rewards': rewards,
-        'redeem_history': redeem_history,
-        'active_tab': active_tab,
-    })
-
-        if not kode_hadiah:
-            messages.error(request, 'Hadiah wajib dipilih.')
-            return redirect('redeem_rewards')
-
-        try:
-            with connection.cursor() as cursor:
-                # Trigger BEFORE INSERT akan validasi saldo & periode
-                # Trigger AFTER INSERT akan potong award_miles otomatis
-                cursor.execute("""
-                    INSERT INTO REDEEM (email_member, kode_hadiah, timestamp)
-                    VALUES (%s, %s, CURRENT_TIMESTAMP)
-                """, [user_email, kode_hadiah])
-
-            messages.success(request, 'Redeem hadiah berhasil.')
-            return redirect(f"{reverse('redeem_rewards')}?tab=history")
-
-        except Exception as e:
-            error_msg = str(e)
-            if 'ERROR:' in error_msg:
-                error_msg = error_msg.split('ERROR:')[-1].strip().split('\n')[0]
-            messages.error(request, error_msg)
-            return redirect('redeem_rewards')
-
-    with connection.cursor() as cursor:
-        # Data member
-        cursor.execute("""
-            SELECT award_miles
-            FROM member
-            WHERE email = %s
-        """, [user_email])
-        member_row = cursor.fetchone()
-
-        if not member_row:
-            messages.error(request, 'Akun member tidak ditemukan.')
-            return redirect('dashboard')
-
-        member = {
-            'email': user_email,
-            'award_miles': member_row[0] or 0,
-            'award_miles_display': format_number(member_row[0] or 0),
-        }
-
-        # Daftar hadiah aktif dari maskapai UNION mitra
-        cursor.execute("""
-            SELECT
-                h.kode_hadiah,
-                h.nama AS nama_hadiah,
-                m.nama_maskapai AS penyedia,
-                h.miles AS jumlah_miles_dibutuhkan,
-                h.deskripsi,
-                h.valid_start_date,
-                h.program_end
-            FROM hadiah h
-            JOIN maskapai m ON h.id_penyedia = m.id_penyedia
-            WHERE h.program_end >= CURRENT_DATE
-
-            UNION
-
-            SELECT
-                h.kode_hadiah,
-                h.nama AS nama_hadiah,
-                ma.nama_mitra AS penyedia,
-                h.miles AS jumlah_miles_dibutuhkan,
-                h.deskripsi,
-                h.valid_start_date,
-                h.program_end
-            FROM hadiah h
-            JOIN mitra ma ON h.id_penyedia = ma.id_penyedia
-            WHERE h.program_end >= CURRENT_DATE
-
-            ORDER BY kode_hadiah
-        """)
-        rewards = dict_fetchall(cursor)
-
-        # Riwayat redeem member
         cursor.execute("""
             SELECT
                 r.kode_hadiah,
@@ -409,7 +292,7 @@ def tier_info(request):
                 nama AS nama_tier,
                 minimal_frekuensi_terbang,
                 minimal_tier_miles
-            FROM tier
+            FROM TIER
             ORDER BY minimal_tier_miles
         """)
         tiers = dict_fetchall(cursor)
@@ -420,8 +303,8 @@ def tier_info(request):
                 t.nama AS nama_tier,
                 t.minimal_frekuensi_terbang,
                 t.minimal_tier_miles
-            FROM member m
-            JOIN tier t
+            FROM MEMBER m
+            JOIN TIER t
                 ON m.id_tier = t.id_tier
             WHERE m.email = %s
         """, [user_email])
@@ -439,8 +322,8 @@ def tier_info(request):
                 t.nama AS nama_tier_berikutnya,
                 t.minimal_tier_miles,
                 t.minimal_tier_miles - m.total_miles AS miles_dibutuhkan
-            FROM member m
-            JOIN tier t
+            FROM MEMBER m
+            JOIN TIER t
                 ON t.minimal_tier_miles > m.total_miles
             WHERE m.email = %s
             ORDER BY t.minimal_tier_miles
@@ -451,17 +334,21 @@ def tier_info(request):
         cursor.execute("""
             SELECT
                 email,
-                COALESCE(total_miles, 0) AS total_miles
-            FROM member
+                COALESCE(total_miles, 0) AS total_miles,
+                COALESCE(award_miles, 0) AS award_miles
+            FROM MEMBER
             WHERE email = %s
         """, [user_email])
         member_row = cursor.fetchone()
 
     total_miles = member_row[1] if member_row else 0
+    award_miles = member_row[2] if member_row else 0
     member = {
         'email': user_email,
         'total_miles': total_miles,
         'total_miles_display': format_number(total_miles),
+        'award_miles': award_miles,
+        'award_miles_display': format_number(award_miles),
     }
 
     next_tier = next_tier_rows[0] if next_tier_rows else None
