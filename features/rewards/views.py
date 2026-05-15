@@ -258,11 +258,103 @@ def buy_packages(request):
 def tier_info(request):
     """Info Tier - untuk Member"""
     user_email, role = get_user_from_request(request)
-    
-    from features.accounts.models import Tier
-    tiers = Tier.objects.all()
 
-    return render(request, 'tier_info.html', {'tiers': tiers})
+    if not user_email:
+        return redirect('login')
+    if role != 'member':
+        return redirect('dashboard')
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                id_tier,
+                nama AS nama_tier,
+                minimal_frekuensi_terbang,
+                minimal_tier_miles
+            FROM tier
+            ORDER BY minimal_tier_miles
+        """)
+        tiers = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT
+                t.id_tier,
+                t.nama AS nama_tier,
+                t.minimal_frekuensi_terbang,
+                t.minimal_tier_miles
+            FROM member m
+            JOIN tier t
+                ON m.id_tier = t.id_tier
+            WHERE m.email = %s
+        """, [user_email])
+        current_tier = dict_fetchall(cursor)
+
+        if not current_tier:
+            messages.error(request, 'Akun member tidak ditemukan.')
+            return redirect('dashboard')
+
+        current_tier = current_tier[0]
+
+        cursor.execute("""
+            SELECT
+                m.total_miles,
+                t.nama AS nama_tier_berikutnya,
+                t.minimal_tier_miles,
+                t.minimal_tier_miles - m.total_miles AS miles_dibutuhkan
+            FROM member m
+            JOIN tier t
+                ON t.minimal_tier_miles > m.total_miles
+            WHERE m.email = %s
+            ORDER BY t.minimal_tier_miles
+            LIMIT 1
+        """, [user_email])
+        next_tier_rows = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT
+                email,
+                COALESCE(total_miles, 0) AS total_miles
+            FROM member
+            WHERE email = %s
+        """, [user_email])
+        member_row = cursor.fetchone()
+
+    total_miles = member_row[1] if member_row else 0
+    member = {
+        'email': user_email,
+        'total_miles': total_miles,
+        'total_miles_display': format_number(total_miles),
+    }
+
+    next_tier = next_tier_rows[0] if next_tier_rows else None
+
+    for tier in tiers:
+        tier['is_current'] = tier['id_tier'] == current_tier['id_tier']
+        tier['minimal_frekuensi_terbang_display'] = format_number(tier['minimal_frekuensi_terbang'])
+        tier['minimal_tier_miles_display'] = format_number(tier['minimal_tier_miles'])
+
+    progress = {
+        'has_next': next_tier is not None,
+        'percent': 100,
+        'miles_to_next': 0,
+        'miles_to_next_display': '0',
+    }
+
+    if next_tier:
+        next_required = next_tier['minimal_tier_miles']
+        miles_to_next = max(next_tier['miles_dibutuhkan'], 0)
+        next_tier['minimal_tier_miles_display'] = format_number(next_required)
+        progress['percent'] = min(100, int((total_miles / next_required) * 100)) if next_required else 100
+        progress['miles_to_next'] = miles_to_next
+        progress['miles_to_next_display'] = format_number(miles_to_next)
+
+    return render(request, 'tier_info.html', {
+        'member': member,
+        'current_tier': current_tier,
+        'tiers': tiers,
+        'next_tier': next_tier,
+        'progress': progress,
+    })
 
 
 def manage_rewards(request):

@@ -3,6 +3,19 @@ from django.contrib import messages
 from django.db import connection
 
 
+def dict_fetchall(cursor):
+    columns = [column[0] for column in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+def format_number(value):
+    return f"{int(value or 0):,}".replace(",", ".")
+
+
+def format_rupiah(value):
+    return f"Rp {format_number(value)}"
+
+
 def get_user_from_request(request):
     return request.session.get('user_email'), request.session.get('user_role')
 
@@ -132,15 +145,176 @@ def reject_claim(request, id):
     return redirect('manage_claims')
 
 def transaction_report(request):
-    from features.accounts.models import Member, ClaimMissingMiles, TransferMiles, Redeem
+    user_email, role = get_user_from_request(request)
+
+    if not user_email:
+        return redirect('login')
+    if role != 'staf':
+        return redirect('dashboard')
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT
+                (SELECT COUNT(*) FROM member) AS total_members,
+                (SELECT COUNT(*) FROM claim_missing_miles) AS total_claims,
+                (SELECT COUNT(*) FROM claim_missing_miles WHERE status_penerimaan = 'Menunggu') AS pending_claims,
+                (SELECT COUNT(*) FROM claim_missing_miles WHERE status_penerimaan = 'Disetujui') AS approved_claims,
+                (SELECT COUNT(*) FROM claim_missing_miles WHERE status_penerimaan = 'Ditolak') AS rejected_claims,
+                (SELECT COUNT(*) FROM transfer) AS total_transfers,
+                (SELECT COUNT(*) FROM redeem) AS total_redeems,
+                (SELECT COUNT(*) FROM member_award_miles_package) AS total_package_purchases,
+                COALESCE((SELECT SUM(jumlah) FROM transfer), 0) AS transfer_miles,
+                COALESCE((
+                    SELECT SUM(h.miles)
+                    FROM redeem r
+                    JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+                ), 0) AS redeem_miles,
+                COALESCE((
+                    SELECT SUM(amp.jumlah_award_miles)
+                    FROM member_award_miles_package map
+                    JOIN award_miles_package amp ON amp.id = map.id_award_miles_package
+                ), 0) AS package_miles
+        """)
+        stats = dict_fetchall(cursor)[0]
+
+        cursor.execute("""
+            SELECT
+                email_member,
+                email_staf,
+                maskapai,
+                bandara_asal,
+                bandara_tujuan,
+                tanggal_penerbangan,
+                flight_number,
+                nomor_tiket,
+                kelas_kabin,
+                pnr,
+                status_penerimaan,
+                timestamp
+            FROM claim_missing_miles
+            ORDER BY timestamp DESC
+        """)
+        claims = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT
+                email_member_1,
+                email_member_2,
+                jumlah,
+                catatan,
+                timestamp
+            FROM transfer
+            ORDER BY timestamp DESC
+        """)
+        transfers = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT
+                r.email_member,
+                r.kode_hadiah,
+                h.nama AS nama_hadiah,
+                h.miles,
+                r.timestamp
+            FROM redeem r
+            JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+            ORDER BY r.timestamp DESC
+        """)
+        redeems = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT
+                map.email_member,
+                map.id_award_miles_package AS id_paket,
+                amp.jumlah_award_miles,
+                amp.harga_paket,
+                map.timestamp
+            FROM member_award_miles_package map
+            JOIN award_miles_package amp ON amp.id = map.id_award_miles_package
+            ORDER BY map.timestamp DESC
+        """)
+        package_purchases = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT *
+            FROM (
+                SELECT
+                    'Beli Package' AS jenis,
+                    map.email_member AS member_email,
+                    NULL AS member_lawan,
+                    map.id_award_miles_package AS referensi,
+                    amp.jumlah_award_miles AS miles,
+                    'Masuk' AS arah,
+                    map.timestamp AS timestamp
+                FROM member_award_miles_package map
+                JOIN award_miles_package amp ON amp.id = map.id_award_miles_package
+
+                UNION ALL
+
+                SELECT
+                    'Redeem Hadiah' AS jenis,
+                    r.email_member AS member_email,
+                    NULL AS member_lawan,
+                    r.kode_hadiah AS referensi,
+                    h.miles AS miles,
+                    'Keluar' AS arah,
+                    r.timestamp AS timestamp
+                FROM redeem r
+                JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+
+                UNION ALL
+
+                SELECT
+                    'Transfer Keluar' AS jenis,
+                    t.email_member_1 AS member_email,
+                    t.email_member_2 AS member_lawan,
+                    'TRANSFER' AS referensi,
+                    t.jumlah AS miles,
+                    'Keluar' AS arah,
+                    t.timestamp AS timestamp
+                FROM transfer t
+
+                UNION ALL
+
+                SELECT
+                    'Transfer Masuk' AS jenis,
+                    t.email_member_2 AS member_email,
+                    t.email_member_1 AS member_lawan,
+                    'TRANSFER' AS referensi,
+                    t.jumlah AS miles,
+                    'Masuk' AS arah,
+                    t.timestamp AS timestamp
+                FROM transfer t
+            ) transaksi
+            ORDER BY timestamp DESC
+            LIMIT 30
+        """)
+        latest_transactions = dict_fetchall(cursor)
+
+    for key, value in list(stats.items()):
+        if key.startswith('total_') or key.endswith('_claims') or key.endswith('_miles'):
+            stats[f'{key}_display'] = format_number(value)
+
+    for transfer in transfers:
+        transfer['jumlah_display'] = format_number(transfer['jumlah'])
+
+    for redeem in redeems:
+        redeem['miles_display'] = format_number(redeem['miles'])
+
+    for purchase in package_purchases:
+        purchase['miles_display'] = format_number(purchase['jumlah_award_miles'])
+        purchase['harga_display'] = format_rupiah(purchase['harga_paket'])
+
+    for item in latest_transactions:
+        item['miles_display'] = format_number(item['miles'])
+        item['signed_miles_display'] = (
+            f"+{item['miles_display']}" if item['arah'] == 'Masuk' else f"-{item['miles_display']}"
+        )
 
     return render(request, 'transaction_report.html', {
-        'total_members': Member.objects.count(),
-        'total_claims': ClaimMissingMiles.objects.count(),
-        'pending_claims': ClaimMissingMiles.objects.filter(status_penerimaan='Menunggu').count(),
-        'approved_claims': ClaimMissingMiles.objects.filter(status_penerimaan='Disetujui').count(),
-        'rejected_claims': ClaimMissingMiles.objects.filter(status_penerimaan='Ditolak').count(),
-        'claims': ClaimMissingMiles.objects.all().order_by('-timestamp'),
-        'transfers': TransferMiles.objects.all().order_by('-timestamp'),
-        'total_redeems': Redeem.objects.count(),
+        'stats': stats,
+        'claims': claims,
+        'transfers': transfers,
+        'redeems': redeems,
+        'package_purchases': package_purchases,
+        'latest_transactions': latest_transactions,
     })
