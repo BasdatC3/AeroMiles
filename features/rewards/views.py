@@ -28,6 +28,19 @@ def format_rupiah(value):
     return f"Rp {format_number(value)}"
 
 
+def dict_fetchall(cursor):
+    columns = [column[0] for column in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+def format_number(value):
+    return f"{int(value or 0):,}".replace(",", ".")
+
+
+def format_rupiah(value):
+    return f"Rp {format_number(value)}"
+
+
 def get_user_from_request(request):
     user_email = request.session.get('user_email')
     user_role = request.session.get('user_role')
@@ -49,6 +62,129 @@ def redeem_rewards(request):
 
     if request.method == 'POST':
         kode_hadiah = request.POST.get('kode_hadiah', '').strip()
+
+        if not kode_hadiah:
+            messages.error(request, 'Hadiah wajib dipilih.')
+            return redirect('redeem_rewards')
+
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE MEMBER
+                        SET award_miles = award_miles - h.miles
+                        FROM HADIAH h
+                        WHERE MEMBER.email = %s
+                            AND h.kode_hadiah = %s
+                            AND MEMBER.award_miles >= h.miles
+                            AND CURRENT_DATE >= h.valid_start_date
+                            AND CURRENT_DATE <= h.program_end
+                        RETURNING h.kode_hadiah, h.nama
+                    """, [user_email, kode_hadiah])
+                    redeemed = cursor.fetchone()
+
+                    if not redeemed:
+                        messages.error(request, 'Hadiah tidak valid atau award miles tidak mencukupi.')
+                        return redirect('redeem_rewards')
+
+                    reward_code, reward_name = redeemed
+
+                    cursor.execute("""
+                        INSERT INTO REDEEM (
+                            email_member,
+                            kode_hadiah,
+                            timestamp
+                        )
+                        VALUES (
+                            %s,
+                            %s,
+                            CURRENT_TIMESTAMP
+                        )
+                    """, [user_email, reward_code])
+
+            messages.success(request, f'Redeem {reward_name} berhasil.')
+            return redirect(f"{reverse('redeem_rewards')}?tab=history")
+        except Exception as e:
+            messages.error(request, f'Gagal redeem hadiah: {str(e)}')
+            return redirect('redeem_rewards')
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT award_miles
+            FROM member
+            WHERE email = %s
+        """, [user_email])
+        member_row = cursor.fetchone()
+
+        if not member_row:
+            messages.error(request, 'Akun member tidak ditemukan.')
+            return redirect('dashboard')
+
+        member = {
+            'email': user_email,
+            'award_miles': member_row[0] or 0,
+            'award_miles_display': format_number(member_row[0] or 0),
+        }
+
+        cursor.execute("""
+            SELECT
+                h.kode_hadiah,
+                h.nama AS nama_hadiah,
+                m.nama_maskapai AS penyedia,
+                h.miles AS jumlah_miles_dibutuhkan,
+                h.deskripsi,
+                h.valid_start_date,
+                h.program_end
+            FROM HADIAH h
+            JOIN MASKAPAI m
+                ON h.id_penyedia = m.id_penyedia
+            WHERE h.program_end >= CURRENT_DATE
+
+            UNION
+
+            SELECT
+                h.kode_hadiah,
+                h.nama AS nama_hadiah,
+                ma.nama_mitra AS penyedia,
+                h.miles AS jumlah_miles_dibutuhkan,
+                h.deskripsi,
+                h.valid_start_date,
+                h.program_end
+            FROM HADIAH h
+            JOIN MITRA ma
+                ON h.id_penyedia = ma.id_penyedia
+            WHERE h.program_end >= CURRENT_DATE
+        """)
+        rewards = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT
+                r.kode_hadiah,
+                h.nama,
+                h.miles,
+                r.timestamp
+            FROM redeem r
+            JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+            WHERE r.email_member = %s
+            ORDER BY r.timestamp DESC
+        """, [user_email])
+        redeem_history = dict_fetchall(cursor)
+
+    for reward in rewards:
+        reward['miles_display'] = format_number(reward['jumlah_miles_dibutuhkan'])
+    for item in redeem_history:
+        item['miles_display'] = format_number(item['miles'])
+
+    active_tab = request.GET.get('tab', 'catalog')
+    if active_tab not in ('catalog', 'history'):
+        active_tab = 'catalog'
+
+    return render(request, 'redeem_rewards.html', {
+        'member': member,
+        'rewards': rewards,
+        'redeem_history': redeem_history,
+        'active_tab': active_tab,
+    })
 
         if not kode_hadiah:
             messages.error(request, 'Hadiah wajib dipilih.')
@@ -179,10 +315,10 @@ def buy_packages(request):
             with transaction.atomic():
                 with connection.cursor() as cursor:
                     cursor.execute("""
-                        UPDATE member
+                        UPDATE MEMBER
                         SET award_miles = award_miles + amp.jumlah_award_miles
-                        FROM award_miles_package amp
-                        WHERE member.email = %s
+                        FROM AWARD_MILES_PACKAGE amp
+                        WHERE MEMBER.email = %s
                           AND amp.id = %s
                         RETURNING amp.id, amp.jumlah_award_miles
                     """, [user_email, package_id])
@@ -195,12 +331,16 @@ def buy_packages(request):
                     selected_id, package_miles = package
 
                     cursor.execute("""
-                        INSERT INTO member_award_miles_package (
+                        INSERT INTO MEMBER_AWARD_MILES_PACKAGE (
                             id_award_miles_package,
                             email_member,
                             timestamp
                         )
-                        VALUES (%s, %s, CURRENT_TIMESTAMP)
+                        VALUES (
+                            %s,
+                            %s,
+                            CURRENT_TIMESTAMP
+                        )
                     """, [selected_id, user_email])
 
             messages.success(
@@ -235,8 +375,7 @@ def buy_packages(request):
                 id AS id_paket,
                 jumlah_award_miles,
                 harga_paket
-            FROM award_miles_package
-            ORDER BY jumlah_award_miles
+            FROM AWARD_MILES_PACKAGE
         """)
         packages = dict_fetchall(cursor)
 
@@ -256,15 +395,104 @@ def buy_packages(request):
 
 def tier_info(request):
     """Info Tier - untuk Member"""
+    user_email, role = get_user_from_request(request)
+
+    if not user_email:
+        return redirect('login')
+    if role != 'member':
+        return redirect('dashboard')
+
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id_tier, nama, minimal_frekuensi_terbang, minimal_tier_miles
+            SELECT
+                id_tier,
+                nama AS nama_tier,
+                minimal_frekuensi_terbang,
+                minimal_tier_miles
             FROM tier
             ORDER BY minimal_tier_miles
         """)
         tiers = dict_fetchall(cursor)
 
-    return render(request, 'tier_info.html', {'tiers': tiers})
+        cursor.execute("""
+            SELECT
+                t.id_tier,
+                t.nama AS nama_tier,
+                t.minimal_frekuensi_terbang,
+                t.minimal_tier_miles
+            FROM member m
+            JOIN tier t
+                ON m.id_tier = t.id_tier
+            WHERE m.email = %s
+        """, [user_email])
+        current_tier = dict_fetchall(cursor)
+
+        if not current_tier:
+            messages.error(request, 'Akun member tidak ditemukan.')
+            return redirect('dashboard')
+
+        current_tier = current_tier[0]
+
+        cursor.execute("""
+            SELECT
+                m.total_miles,
+                t.nama AS nama_tier_berikutnya,
+                t.minimal_tier_miles,
+                t.minimal_tier_miles - m.total_miles AS miles_dibutuhkan
+            FROM member m
+            JOIN tier t
+                ON t.minimal_tier_miles > m.total_miles
+            WHERE m.email = %s
+            ORDER BY t.minimal_tier_miles
+            LIMIT 1
+        """, [user_email])
+        next_tier_rows = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT
+                email,
+                COALESCE(total_miles, 0) AS total_miles
+            FROM member
+            WHERE email = %s
+        """, [user_email])
+        member_row = cursor.fetchone()
+
+    total_miles = member_row[1] if member_row else 0
+    member = {
+        'email': user_email,
+        'total_miles': total_miles,
+        'total_miles_display': format_number(total_miles),
+    }
+
+    next_tier = next_tier_rows[0] if next_tier_rows else None
+
+    for tier in tiers:
+        tier['is_current'] = tier['id_tier'] == current_tier['id_tier']
+        tier['minimal_frekuensi_terbang_display'] = format_number(tier['minimal_frekuensi_terbang'])
+        tier['minimal_tier_miles_display'] = format_number(tier['minimal_tier_miles'])
+
+    progress = {
+        'has_next': next_tier is not None,
+        'percent': 100,
+        'miles_to_next': 0,
+        'miles_to_next_display': '0',
+    }
+
+    if next_tier:
+        next_required = next_tier['minimal_tier_miles']
+        miles_to_next = max(next_tier['miles_dibutuhkan'], 0)
+        next_tier['minimal_tier_miles_display'] = format_number(next_required)
+        progress['percent'] = min(100, int((total_miles / next_required) * 100)) if next_required else 100
+        progress['miles_to_next'] = miles_to_next
+        progress['miles_to_next_display'] = format_number(miles_to_next)
+
+    return render(request, 'tier_info.html', {
+        'member': member,
+        'current_tier': current_tier,
+        'tiers': tiers,
+        'next_tier': next_tier,
+        'progress': progress,
+    })
 
 
 # =============================================================================

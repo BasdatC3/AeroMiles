@@ -4,114 +4,219 @@
 
 {% block content %}
 <div class="max-w-6xl mx-auto space-y-8">
-
-    <!-- HEADER -->
     <div>
-        <h1 class="text-3xl font-bold text-gray-800">Laporan Transaksi</h1>
-        <p class="text-gray-500">Ringkasan aktivitas member</p>
+        <h1 class="text-3xl font-bold text-gray-800">Laporan & Riwayat Transaksi Miles</h1>
+        <p class="text-gray-500">Ringkasan seluruh aktivitas miles member.</p>
     </div>
 
-    <!-- STATS -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white p-4 rounded-xl shadow text-center">
+        <div class="bg-white p-4 rounded-lg shadow text-center">
             <p class="text-gray-500 text-sm">Total Member</p>
-            <p class="text-xl font-bold">{{ total_members }}</p>
+            <p class="text-xl font-bold">{{ stats.total_members_display }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow text-center">
+        <div class="bg-white p-4 rounded-lg shadow text-center">
             <p class="text-gray-500 text-sm">Total Klaim</p>
-            <p class="text-xl font-bold">{{ total_claims }}</p>
+            <p class="text-xl font-bold">{{ stats.total_claims_display }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow text-center">
-            <p class="text-gray-500 text-sm">Disetujui</p>
-            <p class="text-xl font-bold text-green-600">{{ approved_claims }}</p>
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+            <p class="text-gray-500 text-sm">Transfer Miles</p>
+            <p class="text-xl font-bold">{{ stats.transfer_miles_display }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl shadow text-center">
-            <p class="text-gray-500 text-sm">Ditolak</p>
-            <p class="text-xl font-bold text-red-600">{{ rejected_claims }}</p>
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+            <p class="text-gray-500 text-sm">Package Miles</p>
+            <p class="text-xl font-bold text-green-600">{{ stats.package_miles_display }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+            <p class="text-gray-500 text-sm">Klaim Menunggu</p>
+            <p class="text-xl font-bold text-yellow-600">{{ stats.pending_claims_display }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+            <p class="text-gray-500 text-sm">Klaim Disetujui</p>
+            <p class="text-xl font-bold text-green-600">{{ stats.approved_claims_display }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+            <p class="text-gray-500 text-sm">Total Redeem</p>
+            <p class="text-xl font-bold text-red-600">{{ stats.total_redeems_display }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+            <p class="text-gray-500 text-sm">Redeem Miles</p>
+            <p class="text-xl font-bold text-red-600">{{ stats.redeem_miles_display }}</p>
         </div>
     </div>
 
-    <!-- CLAIM TABLE -->
-    <div class="bg-white p-6 rounded-2xl shadow">
-        <h2 class="text-xl font-semibold mb-4">Riwayat Klaim</h2>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Riwayat Miles Terbaru</h2>
+        {% if latest_transactions %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b text-gray-600">
+                            <th class="text-left py-2">Jenis</th>
+                            <th class="text-left py-2">Member</th>
+                            <th class="text-left py-2">Member Lawan</th>
+                            <th class="text-left py-2">Referensi</th>
+                            <th class="text-left py-2">Miles</th>
+                            <th class="text-left py-2">Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in latest_transactions %}
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-2">{{ item.jenis }}</td>
+                                <td class="py-2">{{ item.member_email }}</td>
+                                <td class="py-2">{{ item.member_lawan|default:"-" }}</td>
+                                <td class="py-2">{{ item.referensi }}</td>
+                                <td class="py-2 font-bold {% if item.arah == 'Masuk' %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ item.signed_miles_display }}
+                                </td>
+                                <td class="py-2">{{ item.timestamp|date:"d M Y H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-gray-400 text-center">Belum ada transaksi miles.</p>
+        {% endif %}
+    </div>
 
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Riwayat Klaim Miles</h2>
         {% if claims %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b text-gray-600">
-                        <th class="text-left py-2">Member</th>
-                        <th class="text-left py-2">Flight</th>
-                        <th class="text-left py-2">Rute</th>
-                        <th class="text-left py-2">Status</th>
-                        <th class="text-left py-2">Tanggal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for c in claims %}
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="py-2">{{ c.email_member }}</td>
-                        <td class="py-2">{{ c.flight_number }}</td>
-                        <td class="py-2">{{ c.bandara_asal }} → {{ c.bandara_tujuan }}</td>
-
-                        <td class="py-2">
-                            <span class="px-2 py-1 rounded text-xs
-                                {% if c.status_penerimaan == 'Disetujui' %}
-                                    bg-green-100 text-green-700
-                                {% elif c.status_penerimaan == 'Ditolak' %}
-                                    bg-red-100 text-red-700
-                                {% else %}
-                                    bg-yellow-100 text-yellow-700
-                                {% endif %}
-                            ">
-                                {{ c.status_penerimaan }}
-                            </span>
-                        </td>
-
-                        <td class="py-2">{{ c.timestamp|date:"d M Y" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b text-gray-600">
+                            <th class="text-left py-2">Member</th>
+                            <th class="text-left py-2">Staf</th>
+                            <th class="text-left py-2">Flight</th>
+                            <th class="text-left py-2">Rute</th>
+                            <th class="text-left py-2">Tanggal Terbang</th>
+                            <th class="text-left py-2">Status</th>
+                            <th class="text-left py-2">Waktu Klaim</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for claim in claims %}
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-2">{{ claim.email_member }}</td>
+                                <td class="py-2">{{ claim.email_staf|default:"-" }}</td>
+                                <td class="py-2">{{ claim.flight_number }}</td>
+                                <td class="py-2">{{ claim.bandara_asal }} - {{ claim.bandara_tujuan }}</td>
+                                <td class="py-2">{{ claim.tanggal_penerbangan|date:"d M Y" }}</td>
+                                <td class="py-2">
+                                    <span class="px-2 py-1 rounded text-sm
+                                        {% if claim.status_penerimaan == 'Disetujui' %}bg-green-100 text-green-700
+                                        {% elif claim.status_penerimaan == 'Ditolak' %}bg-red-100 text-red-700
+                                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                        {{ claim.status_penerimaan }}
+                                    </span>
+                                </td>
+                                <td class="py-2">{{ claim.timestamp|date:"d M Y H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-            <p class="text-gray-400 text-center">Belum ada klaim</p>
+            <p class="text-gray-400 text-center">Belum ada klaim.</p>
         {% endif %}
     </div>
 
-    <!-- TRANSFER TABLE -->
-    <div class="bg-white p-6 rounded-2xl shadow">
-        <h2 class="text-xl font-semibold mb-4">Riwayat Transfer</h2>
-
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Riwayat Transfer Miles</h2>
         {% if transfers %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b text-gray-600">
-                        <th class="text-left py-2">Dari</th>
-                        <th class="text-left py-2">Ke</th>
-                        <th class="text-left py-2">Jumlah</th>
-                        <th class="text-left py-2">Catatan</th>
-                        <th class="text-left py-2">Tanggal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in transfers %}
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="py-2">{{ t.email_member_1 }}</td>
-                        <td class="py-2">{{ t.email_member_2 }}</td>
-                        <td class="py-2 font-medium">{{ t.jumlah }}</td>
-                        <td class="py-2">{{ t.catatan }}</td>
-                        <td class="py-2">{{ t.timestamp|date:"d M Y H:i" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b text-gray-600">
+                            <th class="text-left py-2">Dari</th>
+                            <th class="text-left py-2">Ke</th>
+                            <th class="text-left py-2">Jumlah</th>
+                            <th class="text-left py-2">Catatan</th>
+                            <th class="text-left py-2">Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transfer in transfers %}
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-2">{{ transfer.email_member_1 }}</td>
+                                <td class="py-2">{{ transfer.email_member_2 }}</td>
+                                <td class="py-2 font-bold">{{ transfer.jumlah_display }}</td>
+                                <td class="py-2">{{ transfer.catatan|default:"-" }}</td>
+                                <td class="py-2">{{ transfer.timestamp|date:"d M Y H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-            <p class="text-gray-400 text-center">Belum ada transfer</p>
+            <p class="text-gray-400 text-center">Belum ada transfer.</p>
         {% endif %}
     </div>
 
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Riwayat Redeem Hadiah</h2>
+        {% if redeems %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b text-gray-600">
+                            <th class="text-left py-2">Member</th>
+                            <th class="text-left py-2">Kode Hadiah</th>
+                            <th class="text-left py-2">Hadiah</th>
+                            <th class="text-left py-2">Miles</th>
+                            <th class="text-left py-2">Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for redeem in redeems %}
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-2">{{ redeem.email_member }}</td>
+                                <td class="py-2">{{ redeem.kode_hadiah }}</td>
+                                <td class="py-2">{{ redeem.nama_hadiah }}</td>
+                                <td class="py-2 font-bold text-red-600">-{{ redeem.miles_display }}</td>
+                                <td class="py-2">{{ redeem.timestamp|date:"d M Y H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-gray-400 text-center">Belum ada redeem.</p>
+        {% endif %}
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Riwayat Pembelian Award Miles Package</h2>
+        {% if package_purchases %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b text-gray-600">
+                            <th class="text-left py-2">Member</th>
+                            <th class="text-left py-2">ID Paket</th>
+                            <th class="text-left py-2">Miles</th>
+                            <th class="text-left py-2">Harga</th>
+                            <th class="text-left py-2">Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in package_purchases %}
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-2">{{ purchase.email_member }}</td>
+                                <td class="py-2">{{ purchase.id_paket }}</td>
+                                <td class="py-2 font-bold text-green-600">+{{ purchase.miles_display }}</td>
+                                <td class="py-2">{{ purchase.harga_display }}</td>
+                                <td class="py-2">{{ purchase.timestamp|date:"d M Y H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-gray-400 text-center">Belum ada pembelian package.</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

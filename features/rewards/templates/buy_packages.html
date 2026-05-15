@@ -3,21 +3,77 @@
 {% block title %}Beli Package - AeroMiles{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <h1 class="text-3xl font-bold">Beli Package Miles</h1>
+<div class="space-y-6 max-w-6xl mx-auto">
+    <div>
+        <h1 class="text-3xl font-bold">Beli Award Miles Package</h1>
+        <p class="text-sm text-gray-600 mt-2">Award Miles saat ini: <span class="font-bold text-gray-900">{{ member.award_miles_display }}</span></p>
+    </div>
 
-    <div class="grid md:grid-cols-3 gap-6">
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
         {% for pkg in packages %}
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-xl font-bold">{{ pkg.name }}</h2>
-            <p class="text-gray-600 mt-2">{{ pkg.description }}</p>
-            <p class="text-3xl font-bold mt-4">${{ pkg.price }}</p>
-            <p class="text-blue-600 font-bold">+{{ pkg.miles_bonus }} miles</p>
-            <button class="bg-blue-600 text-white px-6 py-2 rounded w-full mt-4 hover:bg-blue-700">Beli</button>
+        <div class="bg-white border rounded-lg shadow-sm p-5 flex flex-col gap-4">
+            <div class="flex justify-between items-start gap-3">
+                <div class="bg-blue-50 text-blue-700 rounded p-2">
+                    <span class="text-xl">+</span>
+                </div>
+                <span class="bg-blue-700 text-white text-xs font-bold px-3 py-1 rounded-full">{{ pkg.id_paket }}</span>
+            </div>
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">{{ pkg.miles_display }}</h2>
+                <p class="text-sm text-gray-600">Award Miles</p>
+            </div>
+            <p class="text-blue-700 font-bold">{{ pkg.harga_display }}</p>
+            <button type="button"
+                    class="mt-auto bg-blue-700 text-white px-4 py-2 rounded font-semibold hover:bg-blue-800"
+                    data-id="{{ pkg.id_paket }}"
+                    data-miles="{{ pkg.miles_display }}"
+                    data-price="{{ pkg.harga_display }}"
+                    onclick="openPackageModal(this)">
+                Beli
+            </button>
         </div>
         {% empty %}
-        <p class="text-gray-500">Belum ada package</p>
+        <div class="bg-white border rounded-lg p-8 text-center text-gray-500 md:col-span-2 lg:col-span-4">
+            Belum ada package
+        </div>
         {% endfor %}
     </div>
 </div>
+
+<div id="packageModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center px-4 z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div class="flex justify-between items-start gap-4">
+            <h2 class="text-xl font-bold">Konfirmasi Pembelian</h2>
+            <button type="button" class="text-gray-400 hover:text-gray-700 text-2xl leading-none" onclick="closePackageModal()">&times;</button>
+        </div>
+        <div class="text-sm text-gray-700 mt-4 space-y-2">
+            <p>Anda akan membeli paket miles berikut:</p>
+            <p>Award Miles: <span id="packageMiles" class="font-bold text-green-700"></span></p>
+            <p>Harga: <span id="packagePrice" class="font-bold"></span></p>
+        </div>
+        <form method="post" class="flex justify-end gap-3 mt-6">
+            {% csrf_token %}
+            <input type="hidden" name="package_id" id="packageId">
+            <button type="button" class="px-4 py-2 rounded border hover:bg-gray-50" onclick="closePackageModal()">Batal</button>
+            <button type="submit" class="px-4 py-2 rounded bg-blue-700 text-white hover:bg-blue-800">Konfirmasi Pembelian</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPackageModal(button) {
+    document.getElementById('packageId').value = button.dataset.id;
+    document.getElementById('packageMiles').textContent = '+' + button.dataset.miles;
+    document.getElementById('packagePrice').textContent = button.dataset.price;
+    const modal = document.getElementById('packageModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closePackageModal() {
+    const modal = document.getElementById('packageModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+</script>
 {% endblock %}

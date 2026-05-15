@@ -3,57 +3,60 @@
 {% block title %}Info Tier - AeroMiles{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <h1 class="text-3xl font-bold">Informasi Tier</h1>
+<div class="max-w-4xl mx-auto space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">Info Tier</h1>
+        <p class="text-gray-600 mt-2">Tier saat ini: <span class="font-bold">{{ current_tier.nama_tier }}</span></p>
+    </div>
 
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Tier Saat Ini: {{ user.tier|upper }}</h2>
+    <div class="bg-white p-6 rounded-lg shadow border">
+        {% if progress.has_next %}
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="font-bold">Progress ke Tier Berikutnya: {{ next_tier.nama_tier_berikutnya }}</h2>
+                <span class="text-sm font-medium">{{ member.total_miles_display }} / {{ next_tier.minimal_tier_miles_display }}</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-3">Butuh {{ progress.miles_to_next_display }} tier miles lagi untuk naik tier.</p>
+            <div class="w-full bg-gray-200 rounded">
+                <div class="bg-blue-600 rounded py-1" style="width: {{ progress.percent }}%;"></div>
+            </div>
+        {% else %}
+            <h2 class="font-bold">Anda sudah berada di tier tertinggi.</h2>
+            <p class="text-sm text-gray-600 mt-2">Total Tier Miles: {{ member.total_miles_display }}</p>
+        {% endif %}
+    </div>
 
-        <div class="grid md:grid-cols-2 gap-4">
-            <div>
-                <p class="text-gray-600">Total Miles</p>
-                <p class="text-3xl font-bold">{{ user.total_miles }}</p>
-            </div>
-            <div>
-                <p class="text-gray-600">Award Miles</p>
-                <p class="text-3xl font-bold">{{ user.award_miles }}</p>
-            </div>
+    <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-white p-6 rounded-lg shadow">
+            <p class="text-sm text-gray-600">Total Tier Miles</p>
+            <p class="text-3xl font-bold text-gray-800">{{ member.total_miles_display }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <p class="text-sm text-gray-600">Award Miles</p>
+            <p class="text-3xl font-bold text-gray-800">{{ member.award_miles_display }}</p>
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Tier Levels</h2>
-        <table class="w-full">
-            <thead>
-                <tr class="border-b">
-                    <th class="text-left py-2">Tier</th>
-                    <th class="text-left py-2">Miles Required</th>
-                    <th class="text-left py-2">Benefits</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="border-b">
-                    <td class="py-2 font-bold">Basic</td>
-                    <td class="py-2">0</td>
-                    <td class="py-2">Base earning rate</td>
-                </tr>
-                <tr class="border-b">
-                    <td class="py-2 font-bold">Silver</td>
-                    <td class="py-2">25,000</td>
-                    <td class="py-2">25% bonus miles</td>
-                </tr>
-                <tr class="border-b">
-                    <td class="py-2 font-bold">Gold</td>
-                    <td class="py-2">50,000</td>
-                    <td class="py-2">50% bonus miles, priority boarding</td>
-                </tr>
-                <tr>
-                    <td class="py-2 font-bold">Platinum</td>
-                    <td class="py-2">100,000</td>
-                    <td class="py-2">75% bonus miles, lounge access</td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="space-y-4">
+        {% for tier in tiers %}
+            <div class="bg-white p-6 rounded-lg shadow border {% if tier.is_current %}bg-yellow-100{% endif %}">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">{{ tier.nama_tier }}</h2>
+                        <p class="text-sm text-gray-600">
+                            Min. {{ tier.minimal_frekuensi_terbang_display }} penerbangan ·
+                            Min. {{ tier.minimal_tier_miles_display }} miles
+                        </p>
+                    </div>
+                    {% if tier.is_current %}
+                        <span class="bg-blue-600 text-white px-2 py-1 rounded text-sm">Tier Anda</span>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">
+                Belum ada data tier.
+            </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
