@@ -67,6 +67,45 @@
         </div>
     </div>
 
+    <!-- Recent Transactions -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Riwayat 5 Transaksi Miles Terbaru</h2>
+        {% if recent_transactions %}
+        <table class="w-full">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Timestamp</th>
+                    <th class="text-left py-2">Tipe</th>
+                    <th class="text-left py-2">Deskripsi</th>
+                    <th class="text-left py-2">Jumlah</th>
+                    <th class="text-left py-2">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for txn in recent_transactions %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-2">{{ txn.timestamp|date:"d M Y H:i" }}</td>
+                    <td class="py-2">{{ txn.type }}</td>
+                    <td class="py-2">{{ txn.description }}</td>
+                    <td class="py-2">
+                        {% if txn.amount > 0 %}
+                            <span class="text-green-600">+{{ txn.amount }}</span>
+                        {% elif txn.amount < 0 %}
+                            <span class="text-red-600">{{ txn.amount }}</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="py-2">{{ txn.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-gray-500 text-center py-4">Belum ada transaksi</p>
+        {% endif %}
+    </div>
+
     {% elif role == 'staf' and staf %}
     <!-- Staff-specific Info -->
     <div class="bg-white p-6 rounded-lg shadow">
@@ -79,6 +118,25 @@
             <div>
                 <p class="text-gray-600">Maskapai Penugasan</p>
                 <p class="font-medium text-lg">{{ staf.kode_maskapai|default:"-" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff Claim Summary -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Ringkasan Klaim Missing Miles</h2>
+        <div class="grid md:grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-yellow-50 rounded">
+                <p class="text-gray-600">Klaim Menunggu (Seluruh Sistem)</p>
+                <p class="font-medium text-2xl">{{ staff_claim_summary.menunggu }}</p>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded">
+                <p class="text-gray-600">Klaim Disetujui (Anda)</p>
+                <p class="font-medium text-2xl">{{ staff_claim_summary.disetujui }}</p>
+            </div>
+            <div class="text-center p-4 bg-red-50 rounded">
+                <p class="text-gray-600">Klaim Ditolak (Anda)</p>
+                <p class="font-medium text-2xl">{{ staff_claim_summary.ditolak }}</p>
             </div>
         </div>
     </div>
