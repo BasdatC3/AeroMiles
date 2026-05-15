@@ -1,7 +1,22 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.db import connection, transaction
 from django.http import JsonResponse
+from django.urls import reverse
 from django.views.decorators.http import require_POST
+
+
+def dict_fetchall(cursor):
+    columns = [column[0] for column in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+def format_number(value):
+    return f"{int(value or 0):,}".replace(",", ".")
+
+
+def format_rupiah(value):
+    return f"Rp {format_number(value)}"
 
 
 def get_user_from_request(request):
@@ -13,23 +28,231 @@ def get_user_from_request(request):
 def redeem_rewards(request):
     """Redeem Hadiah - untuk Member"""
     user_email, role = get_user_from_request(request)
-    
-    from features.accounts.models import Hadiah, Member
-    rewards = Hadiah.objects.all()
-    member = Member.objects.get(email=user_email)
 
-    return render(request, 'redeem_rewards.html', {'rewards': rewards, 'member': member})
+    if not user_email:
+        return redirect('login')
+    if role != 'member':
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        kode_hadiah = request.POST.get('kode_hadiah', '').strip()
+
+        if not kode_hadiah:
+            messages.error(request, 'Hadiah wajib dipilih.')
+            return redirect('redeem_rewards')
+
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE MEMBER
+                        SET award_miles = award_miles - h.miles
+                        FROM HADIAH h
+                        WHERE MEMBER.email = %s
+                            AND h.kode_hadiah = %s
+                            AND MEMBER.award_miles >= h.miles
+                            AND CURRENT_DATE >= h.valid_start_date
+                            AND CURRENT_DATE <= h.program_end
+                        RETURNING h.kode_hadiah, h.nama
+                    """, [user_email, kode_hadiah])
+                    redeemed = cursor.fetchone()
+
+                    if not redeemed:
+                        messages.error(request, 'Hadiah tidak valid atau award miles tidak mencukupi.')
+                        return redirect('redeem_rewards')
+
+                    reward_code, reward_name = redeemed
+
+                    cursor.execute("""
+                        INSERT INTO REDEEM (
+                            email_member,
+                            kode_hadiah,
+                            timestamp
+                        )
+                        VALUES (
+                            %s,
+                            %s,
+                            CURRENT_TIMESTAMP
+                        )
+                    """, [user_email, reward_code])
+
+            messages.success(request, f'Redeem {reward_name} berhasil.')
+            return redirect(f"{reverse('redeem_rewards')}?tab=history")
+        except Exception as e:
+            messages.error(request, f'Gagal redeem hadiah: {str(e)}')
+            return redirect('redeem_rewards')
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT award_miles
+            FROM member
+            WHERE email = %s
+        """, [user_email])
+        member_row = cursor.fetchone()
+
+        if not member_row:
+            messages.error(request, 'Akun member tidak ditemukan.')
+            return redirect('dashboard')
+
+        member = {
+            'email': user_email,
+            'award_miles': member_row[0] or 0,
+            'award_miles_display': format_number(member_row[0] or 0),
+        }
+
+        cursor.execute("""
+            SELECT
+                h.kode_hadiah,
+                h.nama AS nama_hadiah,
+                m.nama_maskapai AS penyedia,
+                h.miles AS jumlah_miles_dibutuhkan,
+                h.deskripsi,
+                h.valid_start_date,
+                h.program_end
+            FROM HADIAH h
+            JOIN MASKAPAI m
+                ON h.id_penyedia = m.id_penyedia
+            WHERE h.program_end >= CURRENT_DATE
+
+            UNION
+
+            SELECT
+                h.kode_hadiah,
+                h.nama AS nama_hadiah,
+                ma.nama_mitra AS penyedia,
+                h.miles AS jumlah_miles_dibutuhkan,
+                h.deskripsi,
+                h.valid_start_date,
+                h.program_end
+            FROM HADIAH h
+            JOIN MITRA ma
+                ON h.id_penyedia = ma.id_penyedia
+            WHERE h.program_end >= CURRENT_DATE
+        """)
+        rewards = dict_fetchall(cursor)
+
+        cursor.execute("""
+            SELECT
+                r.kode_hadiah,
+                h.nama,
+                h.miles,
+                r.timestamp
+            FROM redeem r
+            JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+            WHERE r.email_member = %s
+            ORDER BY r.timestamp DESC
+        """, [user_email])
+        redeem_history = dict_fetchall(cursor)
+
+    for reward in rewards:
+        reward['miles_display'] = format_number(reward['jumlah_miles_dibutuhkan'])
+    for item in redeem_history:
+        item['miles_display'] = format_number(item['miles'])
+
+    active_tab = request.GET.get('tab', 'catalog')
+    if active_tab not in ('catalog', 'history'):
+        active_tab = 'catalog'
+
+    return render(request, 'redeem_rewards.html', {
+        'member': member,
+        'rewards': rewards,
+        'redeem_history': redeem_history,
+        'active_tab': active_tab,
+    })
 
 
 def buy_packages(request):
     """Beli Package - untuk Member"""
     user_email, role = get_user_from_request(request)
-    
-    from features.accounts.models import AwardMilesPackage, Member
-    packages = AwardMilesPackage.objects.all()
-    member = Member.objects.get(email=user_email)
 
-    return render(request, 'buy_packages.html', {'packages': packages, 'member': member})
+    if not user_email:
+        return redirect('login')
+    if role != 'member':
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        package_id = request.POST.get('package_id', '').strip()
+
+        if not package_id:
+            messages.error(request, 'Package wajib dipilih.')
+            return redirect('buy_packages')
+
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE MEMBER
+                        SET award_miles = award_miles + amp.jumlah_award_miles
+                        FROM AWARD_MILES_PACKAGE amp
+                        WHERE MEMBER.email = %s
+                          AND amp.id = %s
+                        RETURNING amp.id, amp.jumlah_award_miles
+                    """, [user_email, package_id])
+                    package = cursor.fetchone()
+
+                    if not package:
+                        messages.error(request, 'Package atau akun member tidak ditemukan.')
+                        return redirect('buy_packages')
+
+                    selected_id, package_miles = package
+
+                    cursor.execute("""
+                        INSERT INTO MEMBER_AWARD_MILES_PACKAGE (
+                            id_award_miles_package,
+                            email_member,
+                            timestamp
+                        )
+                        VALUES (
+                            %s,
+                            %s,
+                            CURRENT_TIMESTAMP
+                        )
+                    """, [selected_id, user_email])
+
+            messages.success(
+                request,
+                f'Pembelian package {selected_id} berhasil. Award miles bertambah {format_number(package_miles)}.'
+            )
+            return redirect('buy_packages')
+        except Exception as e:
+            messages.error(request, f'Gagal membeli package: {str(e)}')
+            return redirect('buy_packages')
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT award_miles
+            FROM member
+            WHERE email = %s
+        """, [user_email])
+        member_row = cursor.fetchone()
+
+        if not member_row:
+            messages.error(request, 'Akun member tidak ditemukan.')
+            return redirect('dashboard')
+
+        member = {
+            'email': user_email,
+            'award_miles': member_row[0] or 0,
+            'award_miles_display': format_number(member_row[0] or 0),
+        }
+
+        cursor.execute("""
+            SELECT
+                id AS id_paket,
+                jumlah_award_miles,
+                harga_paket
+            FROM AWARD_MILES_PACKAGE
+        """)
+        packages = dict_fetchall(cursor)
+
+    for package in packages:
+        package['harga_display'] = format_rupiah(package['harga_paket'])
+        package['miles_display'] = format_number(package['jumlah_award_miles'])
+
+    return render(request, 'buy_packages.html', {
+        'member': member,
+        'packages': packages,
+    })
 
 
 def tier_info(request):

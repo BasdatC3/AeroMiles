@@ -145,7 +145,7 @@ def register(request):
                     email=email,
                     nomor_member=f'M{str(date.today().year)}{Member.objects.count()+1:04d}',
                     tanggal_bergabung=date.today(),
-                    id_tier='BASIC',
+                    id_tier='T01',
                 )
                 messages.success(request, 'Selamat datang di AeroMiles!')
                 request.session['user_email'] = email
@@ -434,7 +434,7 @@ def create_member(request):
                 email=email,
                 nomor_member=f'M{str(date.today().year)}{Member.objects.count()+1:04d}',
                 tanggal_bergabung=date.today(),
-                id_tier='BASIC',
+                id_tier='T01',
             )
 
             return JsonResponse({'success': True, 'message': f'Member {email} berhasil dibuat'})
@@ -461,7 +461,13 @@ def edit_member(request, member_id):
         })
 
     if request.method == 'POST':
-        member.id_tier = request.POST.get('tier', 'BASIC')
+        from features.accounts.models import Tier
+
+        tier_id = request.POST.get('tier') or 'T01'
+        if not Tier.objects.filter(id_tier=tier_id).exists():
+            return JsonResponse({'error': 'Tier tidak valid'}, status=400)
+
+        member.id_tier = tier_id
 
         try:
             member.save()
