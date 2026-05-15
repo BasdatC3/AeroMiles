@@ -4,6 +4,28 @@ from django.db import connection, transaction
 from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_POST
+from datetime import date
+
+
+def dict_fetchall(cursor):
+    columns = [column[0] for column in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+def dict_fetchone(cursor):
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    columns = [column[0] for column in cursor.description]
+    return dict(zip(columns, row))
+
+
+def format_number(value):
+    return f"{int(value or 0):,}".replace(",", ".")
+
+
+def format_rupiah(value):
+    return f"Rp {format_number(value)}"
 
 
 def dict_fetchall(cursor):
@@ -24,6 +46,10 @@ def get_user_from_request(request):
     user_role = request.session.get('user_role')
     return user_email, user_role
 
+
+# =============================================================================
+#  REDEEM HADIAH (Member)
+# =============================================================================
 
 def redeem_rewards(request):
     """Redeem Hadiah - untuk Member"""
@@ -160,6 +186,114 @@ def redeem_rewards(request):
         'active_tab': active_tab,
     })
 
+        if not kode_hadiah:
+            messages.error(request, 'Hadiah wajib dipilih.')
+            return redirect('redeem_rewards')
+
+        try:
+            with connection.cursor() as cursor:
+                # Trigger BEFORE INSERT akan validasi saldo & periode
+                # Trigger AFTER INSERT akan potong award_miles otomatis
+                cursor.execute("""
+                    INSERT INTO REDEEM (email_member, kode_hadiah, timestamp)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP)
+                """, [user_email, kode_hadiah])
+
+            messages.success(request, 'Redeem hadiah berhasil.')
+            return redirect(f"{reverse('redeem_rewards')}?tab=history")
+
+        except Exception as e:
+            error_msg = str(e)
+            if 'ERROR:' in error_msg:
+                error_msg = error_msg.split('ERROR:')[-1].strip().split('\n')[0]
+            messages.error(request, error_msg)
+            return redirect('redeem_rewards')
+
+    with connection.cursor() as cursor:
+        # Data member
+        cursor.execute("""
+            SELECT award_miles
+            FROM member
+            WHERE email = %s
+        """, [user_email])
+        member_row = cursor.fetchone()
+
+        if not member_row:
+            messages.error(request, 'Akun member tidak ditemukan.')
+            return redirect('dashboard')
+
+        member = {
+            'email': user_email,
+            'award_miles': member_row[0] or 0,
+            'award_miles_display': format_number(member_row[0] or 0),
+        }
+
+        # Daftar hadiah aktif dari maskapai UNION mitra
+        cursor.execute("""
+            SELECT
+                h.kode_hadiah,
+                h.nama AS nama_hadiah,
+                m.nama_maskapai AS penyedia,
+                h.miles AS jumlah_miles_dibutuhkan,
+                h.deskripsi,
+                h.valid_start_date,
+                h.program_end
+            FROM hadiah h
+            JOIN maskapai m ON h.id_penyedia = m.id_penyedia
+            WHERE h.program_end >= CURRENT_DATE
+
+            UNION
+
+            SELECT
+                h.kode_hadiah,
+                h.nama AS nama_hadiah,
+                ma.nama_mitra AS penyedia,
+                h.miles AS jumlah_miles_dibutuhkan,
+                h.deskripsi,
+                h.valid_start_date,
+                h.program_end
+            FROM hadiah h
+            JOIN mitra ma ON h.id_penyedia = ma.id_penyedia
+            WHERE h.program_end >= CURRENT_DATE
+
+            ORDER BY kode_hadiah
+        """)
+        rewards = dict_fetchall(cursor)
+
+        # Riwayat redeem member
+        cursor.execute("""
+            SELECT
+                r.kode_hadiah,
+                h.nama,
+                h.miles,
+                r.timestamp
+            FROM redeem r
+            JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+            WHERE r.email_member = %s
+            ORDER BY r.timestamp DESC
+        """, [user_email])
+        redeem_history = dict_fetchall(cursor)
+
+    for reward in rewards:
+        reward['miles_display'] = format_number(reward['jumlah_miles_dibutuhkan'])
+    for item in redeem_history:
+        item['miles_display'] = format_number(item['miles'])
+
+    active_tab = request.GET.get('tab', 'catalog')
+    if active_tab not in ('catalog', 'history'):
+        active_tab = 'catalog'
+
+    return render(request, 'redeem_rewards.html', {
+        'member': member,
+        'rewards': rewards,
+        'redeem_history': redeem_history,
+        'active_tab': active_tab,
+    })
+
+
+# =============================================================================
+#  BELI PACKAGE (Member)
+# =============================================================================
 
 def buy_packages(request):
     """Beli Package - untuk Member"""
@@ -254,6 +388,10 @@ def buy_packages(request):
         'packages': packages,
     })
 
+
+# =============================================================================
+#  TIER INFO (Member)
+# =============================================================================
 
 def tier_info(request):
     """Info Tier - untuk Member"""
@@ -357,66 +495,78 @@ def tier_info(request):
     })
 
 
+# =============================================================================
+#  MANAGE REWARDS — HADIAH & PENYEDIA (Staf)
+# =============================================================================
+
 def manage_rewards(request):
     """Kelola Hadiah & Penyedia - untuk Staf"""
     user_email, role = get_user_from_request(request)
     if role != 'staf':
         return redirect('dashboard')
 
-    from features.accounts.models import Hadiah, Penyedia, Maskapai, Mitra
-    from datetime import date
-
     search = request.GET.get('search', '').strip()
     penyedia_filter = request.GET.get('penyedia', '')
     status_filter = request.GET.get('status', '')
 
-    # Build penyedia info map: id -> {nama, tipe}
-    maskapai_ids = set(Maskapai.objects.values_list('id_penyedia', flat=True))
-    mitra_map = {m.id_penyedia: m.nama_mitra for m in Mitra.objects.all()}
-    maskapai_map = {m.id_penyedia: m.nama_maskapai for m in Maskapai.objects.all()}
-
-    hadiah_qs = Hadiah.objects.all().order_by('kode_hadiah')
     today = date.today()
 
-    hadiah_list = []
-    for h in hadiah_qs:
-        pid = h.id_penyedia
-        if pid in maskapai_ids:
-            tipe = 'airline'
-            nama_penyedia = maskapai_map.get(pid, f'Penyedia {pid}')
-        else:
-            tipe = 'partner'
-            nama_penyedia = mitra_map.get(pid, f'Penyedia {pid}')
+    with connection.cursor() as cursor:
+        # Semua hadiah beserta nama penyedia (maskapai atau mitra)
+        cursor.execute("""
+            SELECT
+                h.kode_hadiah,
+                h.nama,
+                h.miles,
+                h.deskripsi,
+                h.valid_start_date,
+                h.program_end,
+                h.id_penyedia,
+                COALESCE(m.nama_maskapai, mt.nama_mitra, 'Penyedia ' || h.id_penyedia::text) AS nama_penyedia,
+                CASE
+                    WHEN m.id_penyedia IS NOT NULL THEN 'airline'
+                    ELSE 'partner'
+                END AS tipe_penyedia,
+                CASE
+                    WHEN h.program_end < CURRENT_DATE THEN true
+                    ELSE false
+                END AS is_expired
+            FROM hadiah h
+            LEFT JOIN maskapai m ON h.id_penyedia = m.id_penyedia
+            LEFT JOIN mitra mt ON h.id_penyedia = mt.id_penyedia
+            ORDER BY h.kode_hadiah
+        """)
+        all_hadiah = dict_fetchall(cursor)
 
-        is_expired = h.program_end < today
+        # Statistik (unfiltered)
+        total_count = len(all_hadiah)
+        active_count = sum(1 for h in all_hadiah if not h['is_expired'])
+        expired_count = sum(1 for h in all_hadiah if h['is_expired'])
 
         # Apply filters
-        if search and search.lower() not in h.nama.lower():
-            continue
-        if penyedia_filter and tipe != penyedia_filter:
-            continue
-        if status_filter == 'active' and is_expired:
-            continue
-        if status_filter == 'expired' and not is_expired:
-            continue
+        hadiah_list = all_hadiah
+        if search:
+            hadiah_list = [h for h in hadiah_list if search.lower() in h['nama'].lower()]
+        if penyedia_filter:
+            hadiah_list = [h for h in hadiah_list if h['tipe_penyedia'] == penyedia_filter]
+        if status_filter == 'active':
+            hadiah_list = [h for h in hadiah_list if not h['is_expired']]
+        elif status_filter == 'expired':
+            hadiah_list = [h for h in hadiah_list if h['is_expired']]
 
-        h.tipe_penyedia = tipe
-        h.nama_penyedia = nama_penyedia
-        h.is_expired = is_expired
-        hadiah_list.append(h)
+        # Dropdown penyedia untuk form
+        cursor.execute("""
+            SELECT id_penyedia AS id, nama_maskapai AS nama, 'airline' AS tipe
+            FROM maskapai
 
-    # All hadiah for stats (unfiltered)
-    all_hadiah = Hadiah.objects.all()
-    active_count = sum(1 for h in all_hadiah if h.program_end >= today)
-    expired_count = sum(1 for h in all_hadiah if h.program_end < today)
+            UNION ALL
 
-    # Build penyedia_list for dropdowns
-    penyedia_list = []
-    for m in Maskapai.objects.all():
-        if m.id_penyedia:
-            penyedia_list.append({'id': m.id_penyedia, 'nama': m.nama_maskapai, 'tipe': 'airline'})
-    for m in Mitra.objects.all():
-        penyedia_list.append({'id': m.id_penyedia, 'nama': m.nama_mitra, 'tipe': 'partner'})
+            SELECT id_penyedia AS id, nama_mitra AS nama, 'partner' AS tipe
+            FROM mitra
+
+            ORDER BY tipe, nama
+        """)
+        penyedia_list = dict_fetchall(cursor)
 
     return render(request, 'manage_rewards.html', {
         'hadiah_list': hadiah_list,
@@ -424,7 +574,7 @@ def manage_rewards(request):
         'search': search,
         'penyedia_filter': penyedia_filter,
         'status_filter': status_filter,
-        'total_count': all_hadiah.count(),
+        'total_count': total_count,
         'active_count': active_count,
         'expired_count': expired_count,
     })
@@ -432,34 +582,48 @@ def manage_rewards(request):
 
 def hadiah_next_kode(request):
     """Return kode hadiah berikutnya untuk ditampilkan di form"""
-    from features.accounts.models import Hadiah
-    last = Hadiah.objects.order_by('-kode_hadiah').first()
-    if last:
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT kode_hadiah
+            FROM hadiah
+            ORDER BY kode_hadiah DESC
+            LIMIT 1
+        """)
+        row = cursor.fetchone()
+
+    if row:
         try:
-            num = int(last.kode_hadiah.split('-')[1]) + 1
+            num = int(row[0].split('-')[1]) + 1
         except (IndexError, ValueError):
             num = 1
     else:
         num = 1
+
     return JsonResponse({'kode': f'RWD-{num:03d}'})
 
 
 def hadiah_detail(request, kode):
     """Return detail hadiah sebagai JSON untuk edit modal"""
-    from features.accounts.models import Hadiah
-    try:
-        h = Hadiah.objects.get(kode_hadiah=kode)
-        return JsonResponse({'hadiah': {
-            'kode_hadiah': h.kode_hadiah,
-            'nama': h.nama,
-            'miles': h.miles,
-            'deskripsi': h.deskripsi or '',
-            'valid_start_date': str(h.valid_start_date),
-            'program_end': str(h.program_end),
-            'id_penyedia': h.id_penyedia,
-        }})
-    except Hadiah.DoesNotExist:
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia
+            FROM hadiah
+            WHERE kode_hadiah = %s
+        """, [kode])
+        row = dict_fetchone(cursor)
+
+    if not row:
         return JsonResponse({'error': 'Hadiah tidak ditemukan'}, status=404)
+
+    return JsonResponse({'hadiah': {
+        'kode_hadiah': row['kode_hadiah'],
+        'nama': row['nama'],
+        'miles': row['miles'],
+        'deskripsi': row['deskripsi'] or '',
+        'valid_start_date': str(row['valid_start_date']),
+        'program_end': str(row['program_end']),
+        'id_penyedia': row['id_penyedia'],
+    }})
 
 
 @require_POST
@@ -468,9 +632,6 @@ def create_hadiah(request):
     user_email, role = get_user_from_request(request)
     if role != 'staf':
         return JsonResponse({'error': 'Unauthorized'}, status=403)
-
-    from features.accounts.models import Hadiah
-    from django.db import connection
 
     nama = request.POST.get('nama', '').strip()
     id_penyedia = request.POST.get('id_penyedia', '').strip()
@@ -482,21 +643,34 @@ def create_hadiah(request):
     if not all([nama, id_penyedia, miles, valid_start, program_end]):
         return JsonResponse({'error': 'Semua field wajib harus diisi'})
 
-    # Generate kode
-    last = Hadiah.objects.order_by('-kode_hadiah').first()
     try:
-        num = int(last.kode_hadiah.split('-')[1]) + 1 if last else 1
-    except (IndexError, ValueError, AttributeError):
+        miles = int(miles)
+        id_penyedia = int(id_penyedia)
+    except ValueError:
+        return JsonResponse({'error': 'Miles dan ID Penyedia harus berupa angka'})
+
+    # Generate kode hadiah
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT kode_hadiah
+            FROM hadiah
+            ORDER BY kode_hadiah DESC
+            LIMIT 1
+        """)
+        row = cursor.fetchone()
+
+    try:
+        num = int(row[0].split('-')[1]) + 1 if row else 1
+    except (IndexError, ValueError, TypeError):
         num = 1
     kode = f'RWD-{num:03d}'
 
     try:
         with connection.cursor() as cursor:
-            cursor.execute(
-                """INSERT INTO hadiah (kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                [kode, nama, int(miles), deskripsi, valid_start, program_end, int(id_penyedia)]
-            )
+            cursor.execute("""
+                INSERT INTO hadiah (kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, [kode, nama, miles, deskripsi, valid_start, program_end, id_penyedia])
         return JsonResponse({'success': True, 'message': f'Hadiah {kode} berhasil ditambahkan'})
     except Exception as e:
         return JsonResponse({'error': str(e)})
@@ -509,8 +683,6 @@ def edit_hadiah(request, kode):
     if role != 'staf':
         return JsonResponse({'error': 'Unauthorized'}, status=403)
 
-    from django.db import connection
-
     nama = request.POST.get('nama', '').strip()
     id_penyedia = request.POST.get('id_penyedia', '').strip()
     miles = request.POST.get('miles', '').strip()
@@ -522,13 +694,23 @@ def edit_hadiah(request, kode):
         return JsonResponse({'error': 'Semua field wajib harus diisi'})
 
     try:
+        miles = int(miles)
+        id_penyedia = int(id_penyedia)
+    except ValueError:
+        return JsonResponse({'error': 'Miles dan ID Penyedia harus berupa angka'})
+
+    try:
         with connection.cursor() as cursor:
-            cursor.execute(
-                """UPDATE hadiah SET nama=%s, miles=%s, deskripsi=%s,
-                   valid_start_date=%s, program_end=%s, id_penyedia=%s
-                   WHERE kode_hadiah=%s""",
-                [nama, int(miles), deskripsi, valid_start, program_end, int(id_penyedia), kode]
-            )
+            cursor.execute("""
+                UPDATE hadiah
+                SET nama = %s,
+                    miles = %s,
+                    deskripsi = %s,
+                    valid_start_date = %s,
+                    program_end = %s,
+                    id_penyedia = %s
+                WHERE kode_hadiah = %s
+            """, [nama, miles, deskripsi, valid_start, program_end, id_penyedia, kode])
         return JsonResponse({'success': True, 'message': 'Hadiah berhasil diperbarui'})
     except Exception as e:
         return JsonResponse({'error': str(e)})
@@ -538,20 +720,30 @@ def edit_hadiah(request, kode):
 def delete_hadiah(request, kode):
     """Hapus hadiah (hanya yang sudah kadaluarsa)"""
     user_email, role = get_user_from_request(request)
-    
-    from features.accounts.models import Hadiah
-    from datetime import date
-    from django.db import connection
 
     try:
-        h = Hadiah.objects.get(kode_hadiah=kode)
-        if h.program_end >= date.today():
-            messages.error(request, 'Hanya hadiah yang sudah kadaluarsa yang dapat dihapus.')
-            return redirect('manage_rewards')
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM hadiah WHERE kode_hadiah=%s", [kode])
+            # Cek apakah hadiah ada dan belum expired
+            cursor.execute("""
+                SELECT program_end
+                FROM hadiah
+                WHERE kode_hadiah = %s
+            """, [kode])
+            row = cursor.fetchone()
+
+            if not row:
+                messages.error(request, 'Hadiah tidak ditemukan.')
+                return redirect('manage_rewards')
+
+            program_end = row[0]
+            if program_end >= date.today():
+                messages.error(request, 'Hanya hadiah yang sudah kadaluarsa yang dapat dihapus.')
+                return redirect('manage_rewards')
+
+            cursor.execute("DELETE FROM hadiah WHERE kode_hadiah = %s", [kode])
+
         messages.success(request, f'Hadiah {kode} berhasil dihapus.')
-    except Hadiah.DoesNotExist:
-        messages.error(request, 'Hadiah tidak ditemukan.')
+    except Exception as e:
+        messages.error(request, str(e))
 
     return redirect('manage_rewards')
