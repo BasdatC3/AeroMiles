@@ -1,115 +1,92 @@
 {% extends 'base.html' %}
 
-{% block title %}Claim Miles - AeroMiles{% endblock %}
+{% block title %}Klaim Miles - AeroMiles{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8">
+<div class="max-w-6xl mx-auto space-y-6">
 
-    <!-- HEADER -->
-    <div>
-        <h1 class="text-3xl font-bold text-gray-800">Claim Miles</h1>
-        <p class="text-gray-500">Ajukan klaim miles dari penerbangan Anda</p>
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Klaim Missing Miles</h1>
+            <p class="text-gray-500">Ajukan klaim miles dari penerbangan yang belum tercatat</p>
+        </div>
+        <button onclick="document.getElementById('claim-form-modal').classList.remove('hidden')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            + Ajukan Klaim
+        </button>
     </div>
 
-    <!-- FORM -->
-    <div class="bg-white p-6 rounded-2xl shadow">
-        <h2 class="text-xl font-semibold mb-4 text-gray-700">Ajukan Klaim</h2>
+    {% if messages %}
+    <div class="space-y-2">
+        {% for m in messages %}
+        <div class="px-4 py-2 rounded-lg
+            {% if 'error' in m.tags %}bg-red-100 text-red-700
+            {% else %}bg-green-100 text-green-700{% endif %}">
+            {{ m }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-        <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {% csrf_token %}
-
-            <!-- Flight Number -->
-            <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">Flight Number</label>
-                <input type="text" name="flight_number"
-                       class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
-                       placeholder="Contoh: GA123" required>
-            </div>
-
-            <!-- Kelas Kabin -->
-            <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">Kelas Kabin</label>
-                <select name="kelas_kabin"
-                        class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400">
-                    <option value="Economy">Economy</option>
-                    <option value="Business">Business</option>
-                    <option value="First">First</option>
-                </select>
-            </div>
-
-            <!-- Bandara Asal -->
-            <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">Bandara Asal</label>
-                <input type="text" name="bandara_asal"
-                       class="w-full p-2 border rounded-lg"
-                       placeholder="CGK">
-            </div>
-
-            <!-- Bandara Tujuan -->
-            <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">Bandara Tujuan</label>
-                <input type="text" name="bandara_tujuan"
-                       class="w-full p-2 border rounded-lg"
-                       placeholder="DPS">
-            </div>
-
-            <!-- Tanggal -->
-            <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">Tanggal Penerbangan</label>
-                <input type="date" name="tanggal_penerbangan"
-                       class="w-full p-2 border rounded-lg">
-            </div>
-
-            <!-- Submit -->
-            <div class="md:col-span-2">
-                <button type="submit"
-                        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                    Ajukan Klaim
-                </button>
-            </div>
-        </form>
+    <!-- FILTER STATUS -->
+    <div class="bg-white p-4 rounded-2xl shadow flex gap-2">
+        <a href="?" class="px-3 py-1 rounded
+            {% if not status_filter %}bg-blue-600 text-white{% else %}bg-gray-100{% endif %}">Semua</a>
+        <a href="?status=Menunggu" class="px-3 py-1 rounded
+            {% if status_filter == 'Menunggu' %}bg-yellow-500 text-white{% else %}bg-gray-100{% endif %}">Menunggu</a>
+        <a href="?status=Disetujui" class="px-3 py-1 rounded
+            {% if status_filter == 'Disetujui' %}bg-green-600 text-white{% else %}bg-gray-100{% endif %}">Disetujui</a>
+        <a href="?status=Ditolak" class="px-3 py-1 rounded
+            {% if status_filter == 'Ditolak' %}bg-red-600 text-white{% else %}bg-gray-100{% endif %}">Ditolak</a>
     </div>
 
-    <!-- TABLE -->
+    <!-- TABEL RIWAYAT -->
     <div class="bg-white p-6 rounded-2xl shadow">
         <h2 class="text-xl font-semibold mb-4 text-gray-700">Riwayat Klaim</h2>
-
         {% if claims %}
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b text-gray-600">
-                        <th class="text-left py-2">Flight</th>
+                        <th class="text-left py-2">No. Klaim</th>
+                        <th class="text-left py-2">Maskapai</th>
                         <th class="text-left py-2">Rute</th>
+                        <th class="text-left py-2">Tanggal</th>
+                        <th class="text-left py-2">Flight</th>
                         <th class="text-left py-2">Kabin</th>
                         <th class="text-left py-2">Status</th>
-                        <th class="text-left py-2">Tanggal</th>
+                        <th class="text-left py-2">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for claim in claims %}
+                    {% for c in claims %}
                     <tr class="border-b hover:bg-gray-50">
-                        <td class="py-2 font-medium">{{ claim.flight_number }}</td>
-                        <td class="py-2">{{ claim.bandara_asal }} → {{ claim.bandara_tujuan }}</td>
-                        <td class="py-2">{{ claim.kelas_kabin }}</td>
-
-                        <!-- STATUS BADGE -->
+                        <td class="py-2 font-medium">CLM-{{ c.id }}</td>
+                        <td class="py-2">{{ c.maskapai }}</td>
+                        <td class="py-2">{{ c.bandara_asal }} → {{ c.bandara_tujuan }}</td>
+                        <td class="py-2">{{ c.tanggal_penerbangan|date:"Y-m-d" }}</td>
+                        <td class="py-2">{{ c.flight_number }}</td>
+                        <td class="py-2">{{ c.kelas_kabin }}</td>
                         <td class="py-2">
                             <span class="px-3 py-1 rounded-full text-xs font-medium
-                                {% if claim.status_penerimaan == 'Disetujui' %}
-                                    bg-green-100 text-green-700
-                                {% elif claim.status_penerimaan == 'Ditolak' %}
-                                    bg-red-100 text-red-700
-                                {% else %}
-                                    bg-yellow-100 text-yellow-700
-                                {% endif %}
-                            ">
-                                {{ claim.status_penerimaan }}
+                                {% if c.status_penerimaan == 'Disetujui' %}bg-green-100 text-green-700
+                                {% elif c.status_penerimaan == 'Ditolak' %}bg-red-100 text-red-700
+                                {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                {{ c.status_penerimaan }}
                             </span>
                         </td>
-
-                        <td class="py-2">
-                            {{ claim.tanggal_penerbangan|date:"d M Y" }}
+                        <td class="py-2 space-x-2">
+                            {% if c.status_penerimaan == 'Menunggu' %}
+                            <button onclick="loadEditClaim({{ c.id }})"
+                                    class="text-blue-600 hover:underline text-xs">Edit</button>
+                            <form method="post" action="{% url 'cancel_claim' c.id %}" class="inline"
+                                  onsubmit="return confirm('Batalkan klaim ini?');">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-600 hover:underline text-xs">Batal</button>
+                            </form>
+                            {% else %}
+                            <span class="text-gray-400 text-xs">-</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -117,9 +94,192 @@
             </table>
         </div>
         {% else %}
-            <p class="text-gray-400 text-center py-6">Belum ada klaim</p>
+            <p class="text-gray-400 text-center py-6">Belum ada klaim.</p>
         {% endif %}
     </div>
-
 </div>
+
+<!-- MODAL: Ajukan Klaim -->
+<div id="claim-form-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-semibold">Ajukan Klaim Baru</h3>
+            <button onclick="document.getElementById('claim-form-modal').classList.add('hidden')"
+                    class="text-gray-500">&times;</button>
+        </div>
+        <form method="post" id="claim-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Maskapai *</label>
+                <select name="maskapai" required class="w-full p-2 border rounded-lg">
+                    <option value="">-- Pilih --</option>
+                    {% for m in maskapai_list %}
+                    <option value="{{ m.kode_maskapai }}">{{ m.kode_maskapai }} - {{ m.nama_maskapai }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Kelas Kabin *</label>
+                <select name="kelas_kabin" required class="w-full p-2 border rounded-lg">
+                    <option value="Economy">Economy</option>
+                    <option value="Business">Business</option>
+                    <option value="First">First</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Bandara Asal *</label>
+                <select name="bandara_asal" required class="w-full p-2 border rounded-lg">
+                    <option value="">-- Pilih --</option>
+                    {% for b in bandara_list %}
+                    <option value="{{ b.iata_code }}">{{ b.iata_code }} - {{ b.nama }}, {{ b.kota }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Bandara Tujuan *</label>
+                <select name="bandara_tujuan" required class="w-full p-2 border rounded-lg">
+                    <option value="">-- Pilih --</option>
+                    {% for b in bandara_list %}
+                    <option value="{{ b.iata_code }}">{{ b.iata_code }} - {{ b.nama }}, {{ b.kota }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Penerbangan *</label>
+                <input type="date" name="tanggal_penerbangan" required class="w-full p-2 border rounded-lg">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Flight Number *</label>
+                <input type="text" name="flight_number" required placeholder="GA404"
+                       class="w-full p-2 border rounded-lg">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor Tiket *</label>
+                <input type="text" name="nomor_tiket" required placeholder="TK-001"
+                       class="w-full p-2 border rounded-lg">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">PNR *</label>
+                <input type="text" name="pnr" required placeholder="ABC123"
+                       class="w-full p-2 border rounded-lg">
+            </div>
+            <div class="md:col-span-2">
+                <button type="submit"
+                        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                    Ajukan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: Edit Klaim -->
+<div id="claim-edit-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-semibold">Edit Klaim</h3>
+            <button onclick="document.getElementById('claim-edit-modal').classList.add('hidden')"
+                    class="text-gray-500">&times;</button>
+        </div>
+        <form id="claim-edit-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Maskapai</label>
+                <select name="maskapai" id="edit-maskapai" required class="w-full p-2 border rounded-lg">
+                    {% for m in maskapai_list %}
+                    <option value="{{ m.kode_maskapai }}">{{ m.kode_maskapai }} - {{ m.nama_maskapai }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Kelas Kabin</label>
+                <select name="kelas_kabin" id="edit-kelas_kabin" required class="w-full p-2 border rounded-lg">
+                    <option value="Economy">Economy</option>
+                    <option value="Business">Business</option>
+                    <option value="First">First</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Bandara Asal</label>
+                <select name="bandara_asal" id="edit-bandara_asal" required class="w-full p-2 border rounded-lg">
+                    {% for b in bandara_list %}
+                    <option value="{{ b.iata_code }}">{{ b.iata_code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Bandara Tujuan</label>
+                <select name="bandara_tujuan" id="edit-bandara_tujuan" required class="w-full p-2 border rounded-lg">
+                    {% for b in bandara_list %}
+                    <option value="{{ b.iata_code }}">{{ b.iata_code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Tanggal Penerbangan</label>
+                <input type="date" name="tanggal_penerbangan" id="edit-tanggal_penerbangan" required
+                       class="w-full p-2 border rounded-lg">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Flight Number</label>
+                <input type="text" name="flight_number" id="edit-flight_number" required
+                       class="w-full p-2 border rounded-lg">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nomor Tiket</label>
+                <input type="text" name="nomor_tiket" id="edit-nomor_tiket" required
+                       class="w-full p-2 border rounded-lg">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">PNR</label>
+                <input type="text" name="pnr" id="edit-pnr" required
+                       class="w-full p-2 border rounded-lg">
+            </div>
+            <div class="md:col-span-2">
+                <button type="submit"
+                        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function loadEditClaim(claimId) {
+    fetch(`/transactions/claim-miles/${claimId}/edit/`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { alert(data.error); return; }
+            const c = data.claim;
+            document.getElementById('edit-maskapai').value = c.maskapai;
+            document.getElementById('edit-kelas_kabin').value = c.kelas_kabin;
+            document.getElementById('edit-bandara_asal').value = c.bandara_asal;
+            document.getElementById('edit-bandara_tujuan').value = c.bandara_tujuan;
+            document.getElementById('edit-tanggal_penerbangan').value = c.tanggal_penerbangan;
+            document.getElementById('edit-flight_number').value = c.flight_number;
+            document.getElementById('edit-nomor_tiket').value = c.nomor_tiket;
+            document.getElementById('edit-pnr').value = c.pnr;
+            document.getElementById('claim-edit-form').dataset.claimId = claimId;
+            document.getElementById('claim-edit-modal').classList.remove('hidden');
+        });
+}
+
+document.getElementById('claim-edit-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const claimId = this.dataset.claimId;
+    const formData = new FormData(this);
+    fetch(`/transactions/claim-miles/${claimId}/edit/`, {
+        method: 'POST',
+        body: formData,
+        headers: {'X-CSRFToken': formData.get('csrfmiddlewaretoken')}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { alert(data.error); return; }
+        alert(data.message || 'Berhasil');
+        window.location.reload();
+    });
+});
+</script>
 {% endblock %}

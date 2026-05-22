@@ -1,125 +1,115 @@
 {% extends 'base.html' %}
 
-{% block title %}Redeem Rewards - AeroMiles{% endblock %}
+{% block title %}Redeem Hadiah - AeroMiles{% endblock %}
 
 {% block content %}
-<div class="space-y-6 max-w-6xl mx-auto">
+<div class="max-w-6xl mx-auto space-y-6">
+
     <div>
-        <h1 class="text-3xl font-bold">Redeem Hadiah</h1>
-        <p class="text-sm text-gray-600 mt-2">Award Miles tersedia: <span class="font-bold text-gray-900">{{ member.award_miles_display }}</span></p>
+        <h1 class="text-3xl font-bold text-gray-800">Redeem Hadiah</h1>
+        <p class="text-gray-500">
+            Award Miles tersedia:
+            <span class="font-semibold text-blue-600">{{ member.award_miles|default:0 }}</span>
+        </p>
     </div>
 
-    <div class="flex gap-2">
-        <a href="{% url 'redeem_rewards' %}?tab=catalog"
-           class="px-4 py-2 rounded text-sm font-medium {% if active_tab == 'catalog' %}bg-blue-600 text-white{% else %}bg-white border text-gray-700 hover:bg-gray-50{% endif %}">
-            Katalog Hadiah
-        </a>
-        <a href="{% url 'redeem_rewards' %}?tab=history"
-           class="px-4 py-2 rounded text-sm font-medium {% if active_tab == 'history' %}bg-blue-600 text-white{% else %}bg-white border text-gray-700 hover:bg-gray-50{% endif %}">
-            Riwayat Redeem
-        </a>
-    </div>
-
-    {% if active_tab == 'history' %}
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="w-full text-left">
-            <thead class="bg-gray-50 border-b">
-                <tr>
-                    <th class="px-6 py-3 text-sm font-semibold text-gray-700">Hadiah</th>
-                    <th class="px-6 py-3 text-sm font-semibold text-gray-700">Waktu</th>
-                    <th class="px-6 py-3 text-sm font-semibold text-gray-700">Miles</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y">
-                {% for item in redeem_history %}
-                <tr>
-                    <td class="px-6 py-4">
-                        <p class="font-semibold text-gray-900">{{ item.nama }}</p>
-                        <p class="text-sm text-gray-500">{{ item.kode_hadiah }}</p>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ item.timestamp|date:"Y-m-d H:i" }}</td>
-                    <td class="px-6 py-4 text-sm font-semibold text-red-600">-{{ item.miles_display }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3" class="px-6 py-8 text-center text-gray-500">Belum ada riwayat redeem</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    {% if rewards %}
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for reward in rewards %}
-        <div class="bg-white border rounded-lg shadow-sm p-5 flex flex-col gap-4">
-            <div class="space-y-2">
-                <div class="inline-flex bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-                    {{ reward.kode_hadiah }} - {{ reward.penyedia }}
-                </div>
-                <div>
-                    <h2 class="text-xl font-bold text-gray-900">{{ reward.nama_hadiah }}</h2>
-                    <p class="text-sm text-gray-600 mt-1">{{ reward.deskripsi|default:"-" }}</p>
-                </div>
-                <div class="text-sm text-gray-700">
-                    <p><span class="font-semibold">{{ reward.miles_display }}</span> miles</p>
-                    <p>Periode: {{ reward.valid_start_date|date:"Y-m-d" }} - {{ reward.program_end|date:"Y-m-d" }}</p>
-                </div>
-            </div>
-            <button type="button"
-                    class="mt-auto bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700"
-                    data-kode="{{ reward.kode_hadiah }}"
-                    data-nama="{{ reward.nama_hadiah }}"
-                    data-miles="{{ reward.miles_display }}"
-                    data-provider="{{ reward.penyedia }}"
-                    onclick="openRedeemModal(this)">
-                Redeem
-            </button>
+    {% if messages %}
+    <div class="space-y-2">
+        {% for m in messages %}
+        <div class="px-4 py-2 rounded-lg
+            {% if 'error' in m.tags %}bg-red-100 text-red-700
+            {% else %}bg-green-100 text-green-700{% endif %}">
+            {{ m }}
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <div class="bg-white border rounded-lg p-8 text-center text-gray-500">
-        Tidak ada hadiah yang sedang valid.
-    </div>
     {% endif %}
-    {% endif %}
-</div>
 
-<div id="redeemModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center px-4 z-50">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <div class="flex justify-between items-start gap-4">
-            <h2 class="text-xl font-bold">Redeem Miles</h2>
-            <button type="button" class="text-gray-400 hover:text-gray-700 text-2xl leading-none" onclick="closeRedeemModal()">&times;</button>
+    <!-- TABS -->
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+        <div class="flex border-b">
+            <button onclick="showTab('catalog')" id="tab-catalog"
+                    class="px-6 py-3 font-medium border-b-2 border-blue-600 text-blue-600">
+                Katalog Hadiah
+            </button>
+            <button onclick="showTab('history')" id="tab-history"
+                    class="px-6 py-3 font-medium border-b-2 border-transparent text-gray-500">
+                Riwayat Redeem
+            </button>
         </div>
-        <p class="text-sm text-gray-700 mt-4">
-            Miles akan dipotong sebesar <span id="redeemMiles" class="font-bold"></span> untuk reward
-            <span id="redeemName" class="font-bold"></span> dari <span id="redeemProvider" class="font-bold"></span>.
-        </p>
-        <form method="post" class="flex justify-end gap-3 mt-6">
-            {% csrf_token %}
-            <input type="hidden" name="kode_hadiah" id="redeemKode">
-            <button type="button" class="px-4 py-2 rounded border hover:bg-gray-50" onclick="closeRedeemModal()">Batal</button>
-            <button type="submit" class="px-4 py-2 rounded bg-blue-700 text-white hover:bg-blue-800">Redeem</button>
-        </form>
+
+        <!-- Katalog -->
+        <div id="content-catalog" class="p-6">
+            {% if rewards %}
+            <div class="grid md:grid-cols-3 gap-4">
+                {% for r in rewards %}
+                <div class="border rounded-2xl p-4 flex flex-col">
+                    <div class="text-xs text-blue-600 font-semibold mb-1">{{ r.kode_hadiah }}</div>
+                    <h3 class="font-bold text-lg">{{ r.nama }}</h3>
+                    <p class="text-gray-600 text-sm mt-1 flex-1">{{ r.deskripsi|default:"-" }}</p>
+                    <p class="text-2xl font-bold text-blue-600 mt-3">{{ r.miles }} miles</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Periode: {{ r.valid_start_date|date:"Y-m-d" }} s.d. {{ r.program_end|date:"Y-m-d" }}
+                    </p>
+                    <form method="post" class="mt-3"
+                          onsubmit="return confirm('Tukar {{ r.miles }} miles untuk {{ r.nama }}?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="kode_hadiah" value="{{ r.kode_hadiah }}">
+                        <button type="submit"
+                                class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700">
+                            REDEEM
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-400 text-center py-8">Belum ada hadiah aktif.</p>
+            {% endif %}
+        </div>
+
+        <!-- History -->
+        <div id="content-history" class="p-6 hidden">
+            {% if redeem_history %}
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-gray-600">
+                        <th class="text-left py-2">Hadiah</th>
+                        <th class="text-left py-2">Kode</th>
+                        <th class="text-right py-2">Miles</th>
+                        <th class="text-left py-2">Waktu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in redeem_history %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2">{{ h.nama|default:"-" }}</td>
+                        <td class="py-2">{{ h.kode_hadiah }}</td>
+                        <td class="py-2 text-right text-red-600 font-semibold">-{{ h.miles|default:0 }}</td>
+                        <td class="py-2">{{ h.timestamp|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-gray-400 text-center py-8">Belum ada riwayat redeem.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 
 <script>
-function openRedeemModal(button) {
-    document.getElementById('redeemKode').value = button.dataset.kode;
-    document.getElementById('redeemName').textContent = button.dataset.nama;
-    document.getElementById('redeemMiles').textContent = button.dataset.miles;
-    document.getElementById('redeemProvider').textContent = button.dataset.provider;
-    const modal = document.getElementById('redeemModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-}
-
-function closeRedeemModal() {
-    const modal = document.getElementById('redeemModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+function showTab(name) {
+    ['catalog', 'history'].forEach(t => {
+        document.getElementById('content-' + t).classList.add('hidden');
+        const tab = document.getElementById('tab-' + t);
+        tab.classList.remove('border-blue-600', 'text-blue-600');
+        tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    document.getElementById('content-' + name).classList.remove('hidden');
+    const active = document.getElementById('tab-' + name);
+    active.classList.remove('border-transparent', 'text-gray-500');
+    active.classList.add('border-blue-600', 'text-blue-600');
 }
 </script>
 {% endblock %}

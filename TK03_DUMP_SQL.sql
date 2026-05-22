@@ -1,3 +1,12 @@
+CREATE SCHEMA aeromiles;
+set search_path to aeromiles;
+
+-- AKUN DUMMY TK4
+-- Password di-hash dengan SHA-256
+
+-- Kredensial login:
+--   Member  : demo.member@aeromiles.com  / member123
+--   Staf    : demo.staf@aeromiles.com    / staf123
 
 CREATE TABLE PENGGUNA (
     email VARCHAR(100) PRIMARY KEY,
@@ -203,7 +212,9 @@ INSERT INTO PENGGUNA (email, password, salutation, first_mid_name, last_name, co
 ('staf7@aeromiles.com', 'hashS7', 'Mr.', 'Staf', 'Tujuh', '+62', '822000007', '1985-01-07', 'Indonesia'),
 ('staf8@aeromiles.com', 'hashS8', 'Mrs.', 'Staf', 'Delapan', '+62', '822000008', '1985-01-08', 'Indonesia'),
 ('staf9@aeromiles.com', 'hashS9', 'Mr.', 'Staf', 'Sembilan', '+62', '822000009', '1985-01-09', 'Indonesia'),
-('staf10@aeromiles.com', 'hashS10', 'Mrs.', 'Staf', 'Sepuluh', '+62', '822000010', '1985-01-10', 'Indonesia');
+('staf10@aeromiles.com', 'hashS10', 'Mrs.', 'Staf', 'Sepuluh', '+62', '822000010', '1985-01-10', 'Indonesia'),
+('demo.member@aeromiles.com', '5600376e863d2f57a053518f324ad3840b0bc2348b573af281a7b7cbe7a228c6', 'Mr.', 'Demo', 'Member', '+62', '81234567890', '1995-06-15', 'Indonesia'),
+('demo.staf@aeromiles.com',   'd55ed37faf535e9b24d7baa04173735b9565d3421d4fb672b18f2730e27fc5c8', 'Mrs.', 'Demo', 'Staf',   '+62', '81234567891', '1990-03-20', 'Indonesia');
 
 INSERT INTO TIER (id_tier, nama, minimal_frekuensi_terbang, minimal_tier_miles) VALUES
 ('T01', 'Blue', 0, 0),
@@ -270,7 +281,8 @@ INSERT INTO MEMBER (email, nomor_member, tanggal_bergabung, id_tier, award_miles
 ('member47@gmail.com', 'M0047', '2023-02-16', 'T01', 5000, 5000),
 ('member48@gmail.com', 'M0048', '2023-02-17', 'T01', 5000, 5000),
 ('member49@gmail.com', 'M0049', '2023-02-18', 'T01', 5000, 5000),
-('member50@gmail.com', 'M0050', '2023-02-19', 'T01', 5000, 5000);
+('member50@gmail.com', 'M0050', '2023-02-19', 'T01', 5000, 5000),
+('demo.member@aeromiles.com', 'M9999', '2026-01-01', 'T03', 25000, 35000);
 
 INSERT INTO STAF (email, id_staf, kode_maskapai) VALUES
 ('staf1@aeromiles.com', 'S0001', 'GA'),
@@ -282,7 +294,8 @@ INSERT INTO STAF (email, id_staf, kode_maskapai) VALUES
 ('staf7@aeromiles.com', 'S0007', 'SQ'),
 ('staf8@aeromiles.com', 'S0008', 'QZ'),
 ('staf9@aeromiles.com', 'S0009', 'JT'),
-('staf10@aeromiles.com', 'S0010', 'AK');
+('staf10@aeromiles.com', 'S0010', 'AK'),
+('demo.staf@aeromiles.com', 'S9999', 'GA');
 
 INSERT INTO MITRA (email_mitra, id_penyedia, nama_mitra, tanggal_kerja_sama) VALUES
 ('contact@traveloka.com', 6, 'Traveloka', '2020-01-01'),
@@ -414,113 +427,3 @@ INSERT INTO REDEEM (email_member, kode_hadiah, timestamp) VALUES
 ('member15@gmail.com', 'RWD-005', '2024-04-24 10:00:00'), ('member16@gmail.com', 'RWD-006', '2024-04-25 10:00:00'),
 ('member17@gmail.com', 'RWD-007', '2024-04-26 10:00:00'), ('member18@gmail.com', 'RWD-008', '2024-04-27 10:00:00'),
 ('member19@gmail.com', 'RWD-009', '2024-04-28 10:00:00'), ('member20@gmail.com', 'RWD-010', '2024-04-29 10:00:00');
-
-INSERT INTO PENYEDIA (id) VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10);
-
-INSERT INTO MASKAPAI (kode_maskapai, nama_maskapai, id_penyedia) VALUES
-('GA', 'Garuda Indonesia', 1), ('SQ', 'Singapore Airlines', 2),
-('QZ', 'Indonesia AirAsia', 3), ('JT', 'Lion Air', 4), ('AK', 'AirAsia', 5);
-
-INSERT INTO STAF (email, id_staf, kode_maskapai) VALUES
-('staf1@aeromiles.com', 'S0001', 'GA'), ('staf2@aeromiles.com', 'S0002', 'SQ'),
-('staf3@aeromiles.com', 'S0003', 'QZ'), ('staf4@aeromiles.com', 'S0004', 'JT'),
-('staf5@aeromiles.com', 'S0005', 'AK'), ('staf6@aeromiles.com', 'S0006', 'GA'),
-('staf7@aeromiles.com', 'S0007', 'SQ'), ('staf8@aeromiles.com', 'S0008', 'QZ'),
-('staf9@aeromiles.com', 'S0009', 'JT'), ('staf10@aeromiles.com', 'S0010', 'AK');
-
-INSERT INTO MITRA (email_mitra, id_penyedia, nama_mitra, tanggal_kerja_sama) VALUES
-('contact@traveloka.com', 6, 'Traveloka', '2020-01-01'), ('halo@tiket.com', 7, 'Tiket.com', '2021-05-15'),
-('admin@booking.com', 8, 'Booking.com', '2019-10-10'), ('info@agoda.com', 9, 'Agoda', '2018-02-20'),
-('support@blibli.com', 10, 'Blibli', '2022-07-07');
-
-INSERT INTO HADIAH (kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia) VALUES
-('RWD-001', 'Voucher Hotel', 5000, 'Potongan 500rb', '2024-01-01', '2024-12-31', 6),
-('RWD-002', 'Upgrade Business', 15000, 'Upgrade kelas penerbangan', '2024-01-01', '2024-12-31', 1),
-('RWD-003', 'Akses Lounge', 3000, 'Akses ruang tunggu premium', '2024-01-01', '2024-12-31', 1),
-('RWD-004', 'Voucher Resto', 2000, 'Makan gratis 200rb', '2024-01-01', '2024-12-31', 7),
-('RWD-005', 'Merchandise', 1000, 'Kaos eksklusif', '2024-01-01', '2024-12-31', 8),
-('RWD-006', 'Voucher Taksi', 500, 'Diskon taksi bandara', '2024-01-01', '2024-12-31', 9),
-('RWD-007', 'Ekstra Bagasi 10kg', 4000, 'Tambahan kapasitas bagasi', '2024-01-01', '2024-12-31', 2),
-('RWD-008', 'Voucher Belanja', 3500, 'Voucher e-commerce', '2024-01-01', '2024-12-31', 10),
-('RWD-009', 'Asuransi Perjalanan', 2500, 'Asuransi gratis untuk 1 trip', '2024-01-01', '2024-12-31', 3),
-('RWD-010', 'Priority Boarding', 1500, 'Naik pesawat lebih dulu', '2024-01-01', '2024-12-31', 4);
-
-INSERT INTO REDEEM (email_member, kode_hadiah, timestamp) VALUES
-('member1@gmail.com', 'RWD-001', '2024-04-10 10:00:00'), ('member2@gmail.com', 'RWD-002', '2024-04-11 10:00:00'),
-('member3@gmail.com', 'RWD-003', '2024-04-12 10:00:00'), ('member4@gmail.com', 'RWD-004', '2024-04-13 10:00:00'),
-('member5@gmail.com', 'RWD-005', '2024-04-14 10:00:00'), ('member6@gmail.com', 'RWD-006', '2024-04-15 10:00:00'),
-('member7@gmail.com', 'RWD-007', '2024-04-16 10:00:00'), ('member8@gmail.com', 'RWD-008', '2024-04-17 10:00:00'),
-('member9@gmail.com', 'RWD-009', '2024-04-18 10:00:00'), ('member10@gmail.com', 'RWD-010', '2024-04-19 10:00:00'),
-('member11@gmail.com', 'RWD-001', '2024-04-20 10:00:00'), ('member12@gmail.com', 'RWD-002', '2024-04-21 10:00:00'),
-('member13@gmail.com', 'RWD-003', '2024-04-22 10:00:00'), ('member14@gmail.com', 'RWD-004', '2024-04-23 10:00:00'),
-('member15@gmail.com', 'RWD-005', '2024-04-24 10:00:00'), ('member16@gmail.com', 'RWD-006', '2024-04-25 10:00:00'),
-('member17@gmail.com', 'RWD-007', '2024-04-26 10:00:00'), ('member18@gmail.com', 'RWD-008', '2024-04-27 10:00:00'),
-('member19@gmail.com', 'RWD-009', '2024-04-28 10:00:00'), ('member20@gmail.com', 'RWD-010', '2024-04-29 10:00:00');
-
-INSERT INTO BANDARA (iata_code, nama, kota, negara) VALUES
-('CGK', 'Soekarno-Hatta', 'Tangerang', 'Indonesia'), ('DPS', 'Ngurah Rai', 'Denpasar', 'Indonesia'),
-('SIN', 'Changi', 'Singapore', 'Singapore'), ('KNO', 'Kualanamu', 'Medan', 'Indonesia'),
-('SUB', 'Juanda', 'Surabaya', 'Indonesia'), ('BDO', 'Husein Sastranegara', 'Bandung', 'Indonesia'),
-('YIA', 'Yogyakarta International', 'Yogyakarta', 'Indonesia'), ('JOG', 'Adisutjipto', 'Yogyakarta', 'Indonesia'),
-('SRG', 'Ahmad Yani', 'Semarang', 'Indonesia'), ('SOC', 'Adisumarmo', 'Surakarta', 'Indonesia'),
-('LOP', 'Lombok International', 'Mataram', 'Indonesia'), ('UPG', 'Sultan Hasanuddin', 'Makassar', 'Indonesia'),
-('MDC', 'Sam Ratulangi', 'Manado', 'Indonesia'), ('BPN', 'Sepinggan', 'Balikpapan', 'Indonesia'),
-('PNK', 'Supadio', 'Pontianak', 'Indonesia');
-
-INSERT INTO CLAIM_MISSING_MILES (email_member, email_staf, maskapai, bandara_asal, bandara_tujuan, tanggal_penerbangan, flight_number, nomor_tiket, kelas_kabin, pnr, status_penerimaan, timestamp) VALUES
-('member1@gmail.com', NULL, 'GA', 'CGK', 'DPS', '2024-01-01', 'GA400', 'TK-001', 'Economy', 'PNR001', 'Menunggu', '2024-01-02 08:00:00'),
-('member2@gmail.com', 'staf1@aeromiles.com', 'SQ', 'SIN', 'CGK', '2024-01-02', 'SQ950', 'TK-002', 'Business', 'PNR002', 'Disetujui', '2024-01-03 08:00:00'),
-('member3@gmail.com', 'staf2@aeromiles.com', 'QZ', 'SUB', 'DPS', '2024-01-03', 'QZ100', 'TK-003', 'Economy', 'PNR003', 'Ditolak', '2024-01-04 08:00:00'),
-('member4@gmail.com', NULL, 'JT', 'CGK', 'KNO', '2024-01-04', 'JT200', 'TK-004', 'Economy', 'PNR004', 'Menunggu', '2024-01-05 08:00:00'),
-('member5@gmail.com', 'staf3@aeromiles.com', 'AK', 'KNO', 'SIN', '2024-01-05', 'AK300', 'TK-005', 'First', 'PNR005', 'Disetujui', '2024-01-06 08:00:00'),
-('member6@gmail.com', NULL, 'GA', 'DPS', 'CGK', '2024-01-06', 'GA401', 'TK-006', 'Economy', 'PNR006', 'Menunggu', '2024-01-07 08:00:00'),
-('member7@gmail.com', 'staf4@aeromiles.com', 'SQ', 'CGK', 'SIN', '2024-01-07', 'SQ951', 'TK-007', 'Business', 'PNR007', 'Ditolak', '2024-01-08 08:00:00'),
-('member8@gmail.com', NULL, 'QZ', 'DPS', 'SUB', '2024-01-08', 'QZ101', 'TK-008', 'Economy', 'PNR008', 'Menunggu', '2024-01-09 08:00:00'),
-('member9@gmail.com', 'staf5@aeromiles.com', 'JT', 'KNO', 'CGK', '2024-01-09', 'JT201', 'TK-009', 'Economy', 'PNR009', 'Disetujui', '2024-01-10 08:00:00'),
-('member10@gmail.com', NULL, 'AK', 'SIN', 'KNO', '2024-01-10', 'AK301', 'TK-010', 'First', 'PNR010', 'Menunggu', '2024-01-11 08:00:00'),
-('member11@gmail.com', 'staf1@aeromiles.com', 'GA', 'YIA', 'CGK', '2024-01-11', 'GA402', 'TK-011', 'Economy', 'PNR011', 'Disetujui', '2024-01-12 08:00:00'),
-('member12@gmail.com', NULL, 'SQ', 'SIN', 'SUB', '2024-01-12', 'SQ952', 'TK-012', 'Business', 'PNR012', 'Menunggu', '2024-01-13 08:00:00'),
-('member13@gmail.com', 'staf2@aeromiles.com', 'QZ', 'BDO', 'DPS', '2024-01-13', 'QZ102', 'TK-013', 'Economy', 'PNR013', 'Ditolak', '2024-01-14 08:00:00'),
-('member14@gmail.com', NULL, 'JT', 'SRG', 'CGK', '2024-01-14', 'JT202', 'TK-014', 'Economy', 'PNR014', 'Menunggu', '2024-01-15 08:00:00'),
-('member15@gmail.com', 'staf3@aeromiles.com', 'AK', 'PNK', 'CGK', '2024-01-15', 'AK302', 'TK-015', 'First', 'PNR015', 'Disetujui', '2024-01-16 08:00:00'),
-('member16@gmail.com', NULL, 'GA', 'CGK', 'YIA', '2024-01-16', 'GA403', 'TK-016', 'Economy', 'PNR016', 'Menunggu', '2024-01-17 08:00:00'),
-('member17@gmail.com', 'staf4@aeromiles.com', 'SQ', 'SUB', 'SIN', '2024-01-17', 'SQ953', 'TK-017', 'Business', 'PNR017', 'Ditolak', '2024-01-18 08:00:00'),
-('member18@gmail.com', NULL, 'QZ', 'DPS', 'BDO', '2024-01-18', 'QZ103', 'TK-018', 'Economy', 'PNR018', 'Menunggu', '2024-01-19 08:00:00'),
-('member19@gmail.com', 'staf5@aeromiles.com', 'JT', 'CGK', 'SRG', '2024-01-19', 'JT203', 'TK-019', 'Economy', 'PNR019', 'Disetujui', '2024-01-20 08:00:00'),
-('member20@gmail.com', NULL, 'AK', 'CGK', 'PNK', '2024-01-20', 'AK303', 'TK-020', 'First', 'PNR020', 'Menunggu', '2024-01-21 08:00:00');
-
-INSERT INTO TRANSFER (email_member_1, email_member_2, timestamp, jumlah, catatan) VALUES
-('member1@gmail.com', 'member2@gmail.com', '2024-04-01 10:00:00', 1000, 'Kado ulang tahun'),
-('member2@gmail.com', 'member3@gmail.com', '2024-04-02 10:00:00', 1500, 'Utang'),
-('member3@gmail.com', 'member4@gmail.com', '2024-04-03 10:00:00', 2000, 'Patungan'),
-('member4@gmail.com', 'member5@gmail.com', '2024-04-04 10:00:00', 2500, 'Hadiah'),
-('member5@gmail.com', 'member6@gmail.com', '2024-04-05 10:00:00', 3000, 'Bonus'),
-('member6@gmail.com', 'member7@gmail.com', '2024-04-06 10:00:00', 3500, ''),
-('member7@gmail.com', 'member8@gmail.com', '2024-04-07 10:00:00', 4000, ''),
-('member8@gmail.com', 'member9@gmail.com', '2024-04-08 10:00:00', 4500, ''),
-('member9@gmail.com', 'member10@gmail.com', '2024-04-09 10:00:00', 5000, ''),
-('member10@gmail.com', 'member11@gmail.com', '2024-04-10 10:00:00', 5500, ''),
-('member11@gmail.com', 'member12@gmail.com', '2024-04-11 10:00:00', 6000, ''),
-('member12@gmail.com', 'member13@gmail.com', '2024-04-12 10:00:00', 6500, ''),
-('member13@gmail.com', 'member14@gmail.com', '2024-04-13 10:00:00', 7000, ''),
-('member14@gmail.com', 'member15@gmail.com', '2024-04-14 10:00:00', 7500, ''),
-('member15@gmail.com', 'member16@gmail.com', '2024-04-15 10:00:00', 8000, '');
-
-INSERT INTO AWARD_MILES_PACKAGE (id, harga_paket, jumlah_award_miles) VALUES
-('AMP-001', 150000.00, 1000), ('AMP-002', 300000.00, 2000), ('AMP-003', 450000.00, 3000), ('AMP-004', 600000.00, 4000),
-('AMP-005', 750000.00, 5000), ('AMP-006', 900000.00, 6000), ('AMP-007', 1050000.00, 7000), ('AMP-008', 1200000.00, 8000),
-('AMP-009', 1350000.00, 9000), ('AMP-010', 1500000.00, 10000), ('AMP-011', 1650000.00, 11000), ('AMP-012', 1800000.00, 12000),
-('AMP-013', 1950000.00, 13000), ('AMP-014', 2100000.00, 14000), ('AMP-015', 2250000.00, 15000), ('AMP-016', 2400000.00, 16000),
-('AMP-017', 2550000.00, 17000), ('AMP-018', 2700000.00, 18000), ('AMP-019', 2850000.00, 19000), ('AMP-020', 3000000.00, 20000);
-
-INSERT INTO MEMBER_AWARD_MILES_PACKAGE (id_award_miles_package, email_member, timestamp) VALUES
-('AMP-001', 'member1@gmail.com', '2024-03-01 10:00:00'), ('AMP-002', 'member2@gmail.com', '2024-03-02 10:00:00'),
-('AMP-003', 'member3@gmail.com', '2024-03-03 10:00:00'), ('AMP-004', 'member4@gmail.com', '2024-03-04 10:00:00'),
-('AMP-005', 'member5@gmail.com', '2024-03-05 10:00:00'), ('AMP-006', 'member6@gmail.com', '2024-03-06 10:00:00'),
-('AMP-007', 'member7@gmail.com', '2024-03-07 10:00:00'), ('AMP-008', 'member8@gmail.com', '2024-03-08 10:00:00'),
-('AMP-009', 'member9@gmail.com', '2024-03-09 10:00:00'), ('AMP-010', 'member10@gmail.com', '2024-03-10 10:00:00'),
-('AMP-011', 'member11@gmail.com', '2024-03-11 10:00:00'), ('AMP-012', 'member12@gmail.com', '2024-03-12 10:00:00'),
-('AMP-013', 'member13@gmail.com', '2024-03-13 10:00:00'), ('AMP-014', 'member14@gmail.com', '2024-03-14 10:00:00'),
-('AMP-015', 'member15@gmail.com', '2024-03-15 10:00:00'), ('AMP-016', 'member16@gmail.com', '2024-03-16 10:00:00'),
-('AMP-017', 'member17@gmail.com', '2024-03-17 10:00:00'), ('AMP-018', 'member18@gmail.com', '2024-03-18 10:00:00'),
-('AMP-019', 'member19@gmail.com', '2024-03-19 10:00:00'), ('AMP-020', 'member20@gmail.com', '2024-03-20 10:00:00');

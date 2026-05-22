@@ -6,6 +6,16 @@
 <div class="space-y-6">
     <h1 class="text-3xl font-bold">Kelola Member</h1>
 
+    {% if messages %}
+    <div class="space-y-2">
+        {% for m in messages %}
+        <div class="px-4 py-2 rounded-lg
+            {% if 'error' in m.tags %}bg-red-100 text-red-700
+            {% else %}bg-green-100 text-green-700{% endif %}">{{ m }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Search & Filter -->
     <div class="bg-white p-6 rounded-lg shadow">
         <form method="get" class="flex flex-wrap gap-4">
@@ -16,13 +26,14 @@
             <div>
                 <select name="tier" class="p-2 border rounded">
                     <option value="">Semua Tier</option>
-                    {% for tier in tiers %}
-                        <option value="{{ tier.id_tier }}" {% if tier_filter == tier.id_tier %}selected{% endif %}>{{ tier.nama }}</option>
+                    {% for t in tiers %}
+                    <option value="{{ t.id_tier }}" {% if tier_filter == t.id_tier %}selected{% endif %}>{{ t.nama }}</option>
                     {% endfor %}
                 </select>
             </div>
             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Cari</button>
-            <button type="button" onclick="openModal('createModal')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Tambah Member</button>
+            <button type="button" onclick="openModal('createModal')"
+                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">+ Tambah Member</button>
         </form>
     </div>
 
@@ -44,21 +55,21 @@
             <tbody>
                 {% for m in members %}
                 <tr class="border-b hover:bg-gray-50">
-                    <td class="py-2">{{ m.member_number|default:"-" }}</td>
-                    <td class="py-2">{{ m.get_full_name }}</td>
+                    <td class="py-2">{{ m.nomor_member|default:"-" }}</td>
+                    <td class="py-2">{{ m.salutation }} {{ m.first_mid_name }} {{ m.last_name }}</td>
                     <td class="py-2">{{ m.email }}</td>
                     <td class="py-2">
                         <span class="px-2 py-1 rounded text-sm uppercase
-                            {% if m.id_tier == 'T01' %}bg-gray-200{% elif m.id_tier == 'T02' %}bg-gray-300{% elif m.id_tier == 'T03' %}bg-yellow-200{% else %}bg-purple-200{% endif %}">
-                            {{ m.id_tier }}
+                            {% if m.tier == 'basic' %}bg-gray-200{% elif m.tier == 'silver' %}bg-gray-300{% elif m.tier == 'gold' %}bg-yellow-200{% else %}bg-purple-200{% endif %}">
+                            {{ m.tier }}
                         </span>
                     </td>
                     <td class="py-2">{{ m.total_miles }}</td>
                     <td class="py-2">{{ m.award_miles }}</td>
-                    <td class="py-2">{{ m.join_date }}</td>
-                    <td class="py-2">
-                        <button onclick="openEditModal({{ m.id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
-                        <button onclick="confirmDelete({{ m.id }}, '{{ m.email }}')" class="text-red-600 hover:underline">Hapus</button>
+                    <td class="py-2">{{ m.tanggal_bergabung|date:"Y-m-d" }}</td>
+                    <td class="py-2 space-x-2">
+                        <button onclick="openEditModal('{{ m.email }}')" class="text-blue-600 hover:underline">Edit</button>
+                        <button onclick="confirmDelete('{{ m.email }}')" class="text-red-600 hover:underline">Hapus</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -75,43 +86,20 @@
 <div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 class="text-xl font-bold mb-4">Tambah Member Baru</h2>
-        <form id="createForm" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium mb-1">Email *</label>
-                <input type="email" name="email" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Password *</label>
-                <input type="password" name="password" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Salutation</label>
-                <input type="text" name="salutation" class="w-full p-2 border rounded" placeholder="Mr/Mrs/Ms">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Nama Depan-Tengah</label>
-                <input type="text" name="first_mid_name" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Nama Belakang *</label>
-                <input type="text" name="last_name" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Country Code</label>
-                <input type="text" name="country_code" class="w-full p-2 border rounded" placeholder="+62">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Nomor HP</label>
-                <input type="text" name="phone" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Kewarganegaraan</label>
-                <input type="text" name="nationality" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Tanggal Lahir</label>
-                <input type="date" name="birth_date" class="w-full p-2 border rounded">
-            </div>
+        <form id="createForm" class="space-y-3">
+            {% csrf_token %}
+            <input type="email" name="email" placeholder="Email *" required class="w-full p-2 border rounded">
+            <input type="password" name="password" placeholder="Password *" required class="w-full p-2 border rounded">
+            <select name="salutation" class="w-full p-2 border rounded">
+                <option value="Mr.">Mr.</option><option value="Mrs.">Mrs.</option>
+                <option value="Ms.">Ms.</option><option value="Dr.">Dr.</option>
+            </select>
+            <input type="text" name="first_mid_name" placeholder="Nama Depan-Tengah" class="w-full p-2 border rounded">
+            <input type="text" name="last_name" placeholder="Nama Belakang *" required class="w-full p-2 border rounded">
+            <input type="text" name="country_code" placeholder="+62" class="w-full p-2 border rounded">
+            <input type="text" name="phone" placeholder="Nomor HP" class="w-full p-2 border rounded">
+            <input type="text" name="nationality" placeholder="Kewarganegaraan" class="w-full p-2 border rounded">
+            <input type="date" name="birth_date" class="w-full p-2 border rounded">
             <div class="flex gap-2">
                 <button type="button" onclick="closeModal('createModal')" class="flex-1 bg-gray-300 py-2 rounded">Batal</button>
                 <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">Simpan</button>
@@ -124,50 +112,23 @@
 <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 class="text-xl font-bold mb-4">Edit Member</h2>
-        <form id="editForm" class="space-y-4">
-            <input type="hidden" name="member_id" id="editMemberId">
+        <form id="editForm" class="space-y-3">
+            {% csrf_token %}
             <div>
-                <label class="block text-sm font-medium mb-1">Email</label>
+                <label class="block text-sm mb-1">Email</label>
                 <input type="email" id="editEmail" class="w-full p-2 border rounded bg-gray-100" disabled>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Nomor Member</label>
+                <label class="block text-sm mb-1">Nomor Member</label>
                 <input type="text" id="editMemberNumber" class="w-full p-2 border rounded bg-gray-100" disabled>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Salutation</label>
-                <input type="text" name="salutation" id="editSalutation" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Nama Depan-Tengah</label>
-                <input type="text" name="first_mid_name" id="editFirstMidName" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Nama Belakang *</label>
-                <input type="text" name="last_name" id="editLastName" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Country Code</label>
-                <input type="text" name="country_code" id="editCountryCode" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Nomor HP</label>
-                <input type="text" name="phone" id="editPhone" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Kewarganegaraan</label>
-                <input type="text" name="nationality" id="editNationality" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Tanggal Lahir</label>
-                <input type="date" name="birth_date" id="editBirthDate" class="w-full p-2 border rounded">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Tier</label>
+                <label class="block text-sm mb-1">Tier</label>
                 <select name="tier" id="editTier" class="w-full p-2 border rounded">
-                    {% for tier in tiers %}
-                        <option value="{{ tier.id_tier }}">{{ tier.nama }}</option>
-                    {% endfor %}
+                    <option value="basic">Basic</option>
+                    <option value="silver">Silver</option>
+                    <option value="gold">Gold</option>
+                    <option value="platinum">Platinum</option>
                 </select>
             </div>
             <div class="flex gap-2">
@@ -182,7 +143,8 @@
 <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4">Konfirmasi Hapus</h2>
-        <p class="mb-4">Yakin ingin hapus member <span id="deleteMemberEmail" class="font-bold"></span>?</p>
+        <p class="mb-4">Yakin ingin hapus member <span id="deleteMemberEmail" class="font-bold"></span>?
+            Semua data terkait (Identitas, Klaim, Transfer, Redeem, Package) akan ikut terhapus.</p>
         <form id="deleteForm" method="post">
             {% csrf_token %}
             <div class="flex gap-2">
@@ -194,21 +156,22 @@
 </div>
 
 <script>
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 
-function confirmDelete(id, email) {
+function confirmDelete(email) {
     document.getElementById('deleteMemberEmail').textContent = email;
-    document.getElementById('deleteForm').action = `/members/${id}/delete/`;
+    document.getElementById('deleteForm').action = `/members/${encodeURIComponent(email)}/delete/`;
     openModal('deleteModal');
 }
 
-function openEditModal(id) {
-    fetch(`/members/${id}/edit/`)
+function openEditModal(email) {
+    fetch(`/members/${encodeURIComponent(email)}/edit/`)
         .then(r => r.json())
         .then(data => {
             if (data.member) {
-                document.getElementById('editMemberId').value = id;
                 document.getElementById('editEmail').value = data.member.email || '';
                 document.getElementById('editMemberNumber').value = data.member.member_number || '-';
                 document.getElementById('editSalutation').value = data.member.salutation || '';
@@ -218,9 +181,11 @@ function openEditModal(id) {
                 document.getElementById('editPhone').value = data.member.phone || '';
                 document.getElementById('editNationality').value = data.member.nationality || '';
                 document.getElementById('editBirthDate').value = data.member.birth_date || '';
-                document.getElementById('editTier').value = data.member.id_tier || 'T01';
+                document.getElementById('editTier').value = data.member.tier || 'basic';
                 document.getElementById('editForm').action = `/members/${id}/edit/`;
                 openModal('editModal');
+            } else if (data.error) {
+                alert(data.error);
             }
         });
 }
@@ -228,11 +193,13 @@ function openEditModal(id) {
 document.getElementById('createForm').onsubmit = async function(e) {
     e.preventDefault();
     let formData = new FormData(this);
-    let response = await fetch('/members/create/', { method: 'POST', body: formData });
+    let response = await fetch('/members/create/', {
+        method: 'POST', body: formData,
+        headers: {'X-CSRFToken': csrfToken}
+    });
     let result = await response.json();
     if (result.success) {
         alert(result.message);
-        closeModal('createModal');
         location.reload();
     } else {
         alert(result.error);
@@ -242,12 +209,14 @@ document.getElementById('createForm').onsubmit = async function(e) {
 document.getElementById('editForm').onsubmit = async function(e) {
     e.preventDefault();
     let formData = new FormData(this);
-    let id = document.getElementById('editMemberId').value;
-    let response = await fetch(`/members/${id}/edit/`, { method: 'POST', body: formData });
+    const email = this.dataset.email;
+    let response = await fetch(`/members/${encodeURIComponent(email)}/edit/`, {
+        method: 'POST', body: formData,
+        headers: {'X-CSRFToken': csrfToken}
+    });
     let result = await response.json();
     if (result.success) {
         alert(result.message);
-        closeModal('editModal');
         location.reload();
     } else {
         alert(result.error);

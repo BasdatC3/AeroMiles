@@ -1,5 +1,10 @@
 """
-Django settings for AeroMiles project.
+Django settings for AeroMiles project (TK03).
+
+Spec TK03 mensyaratkan TIDAK menggunakan Django ORM. Konfigurasi ini:
+- Tidak memakai django.contrib.auth, admin, contenttypes (semua butuh ORM tables).
+- Memakai signed-cookie session, sehingga tidak butuh django_session table.
+- Akses database hanya lewat psycopg2 (lihat main/db.py).
 """
 
 import os
@@ -13,44 +18,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-dev-key-change-in-production')
 
-def env_bool(name, default=False):
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
+ALLOWED_HOSTS = ['*']
 
 
-def env_list(name):
-    return [
-        item.strip()
-        for item in os.getenv(name, '').split(',')
-        if item.strip()
-    ]
-
-
-DEBUG = env_bool('DEBUG', default=not env_bool('RENDER'))
-
-ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS') or ['localhost', '127.0.0.1', '[::1]']
-render_hostname = os.getenv('RENDER_EXTERNAL_HOSTNAME')
-if render_hostname and render_hostname not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(render_hostname)
-
-CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
-if render_hostname:
-    render_origin = f'https://{render_hostname}'
-    if render_origin not in CSRF_TRUSTED_ORIGINS:
-        CSRF_TRUSTED_ORIGINS.append(render_origin)
-
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', default=not DEBUG)
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0' if DEBUG else '3600'))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=not DEBUG)
-SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', default=not DEBUG)
-
-# Parse Neon connection string
 def get_db_config():
+    """Parse Neon connection string atau fallback ke variabel terpisah."""
     conn_string = os.getenv('NEON_CONNECTION_STRING', '')
     if conn_string:
         parsed = urlparse(conn_string)
@@ -73,15 +47,20 @@ def get_db_config():
         'PORT': os.getenv('NEON_DB_PORT', '5432'),
     }
 
+
+# Catatan: konfigurasi DATABASES tetap dipertahankan supaya psycopg2 bisa membaca
+# kredensial dari Django settings (lihat main/db.py: get_connection()).
+# Tidak ada model yang di-manage Django — semua query pakai psycopg2 raw SQL.
+DATABASES = {
+    'default': get_db_config()
+}
+
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
+    # Hanya app yang menyediakan template loader & static files; TIDAK termasuk
+    # django.contrib.auth/admin/contenttypes karena membutuhkan tabel ORM.
     'django.contrib.staticfiles',
-    'django.contrib.sites',
-    'rest_framework',
+    'django.contrib.messages',
+    'django.contrib.sessions',
     'features.accounts',
     'features.flights',
     'features.transactions',
@@ -94,7 +73,6 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -116,7 +94,6 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'main.context_processors.user_session',
             ],
@@ -126,18 +103,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'main.wsgi.application'
 
-DATABASES = {
-    'default': get_db_config()
-}
-
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-
-# Use default Django User model
+# Gunakan signed-cookie session: data session disimpan di cookie ter-tanda-tangan,
+# sehingga TIDAK perlu tabel django_session di database.
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -152,22 +120,8 @@ STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
 
-if not DEBUG:
-    STORAGES = {
-        'default': {
-            'BACKEND': 'django.core.files.storage.FileSystemStorage',
-        },
-        'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
-        },
-    }
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-SITE_ID = 1
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
